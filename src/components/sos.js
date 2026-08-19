@@ -1,0 +1,456 @@
+﻿import { storage } from '../services/storage.js';
+import { sound } from '../services/sound.js';
+import { locationService } from '../services/location.js';
+import { i18n } from '../services/i18n.js';
+
+export class SosComponent {
+  constructor(container) {
+    this.container = container;
+    this.holdTimer = null;
+  }
+
+  render() {
+    const profile = storage.getProfile();
+    const settings = storage.getSettings();
+    const primaryContact = profile.contacts.find(c => c.isPrimary) || profile.contacts[0];
+
+    this.container.innerHTML = `
+      <div class="space-y-6 animate-fade-in w-full">
+        <!-- Desktop Grid Layout: 2 Columns on LG screens -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          <!-- LEFT / MAIN COLUMN: SOS Button & Quick Actions -->
+          <div class="lg:col-span-7 space-y-6">
+            <!-- Hero SOS Trigger Card -->
+            <div class="glass-card p-6 md:p-8 rounded-3xl border relative overflow-hidden flex flex-col items-center justify-center text-center">
+              <!-- Ambient Glow background -->
+              <div class="absolute -top-24 -left-24 w-72 h-72 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+              <div class="relative flex items-center justify-center my-4">
+                <!-- Outer Pulsing Rings -->
+                <div class="absolute -inset-6 rounded-full bg-red-600/20 animate-ping pointer-events-none"></div>
+                <div class="absolute -inset-10 rounded-full bg-red-500/10 pointer-events-none"></div>
+
+                <!-- SVG Circular Progress for Hold Action -->
+                <svg class="absolute w-60 h-60 transform -rotate-90 pointer-events-none" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="46" class="stroke-slate-300 dark:stroke-slate-800" stroke-width="4" fill="transparent" />
+                  <circle id="sos-progress-ring" cx="50" cy="50" r="46" class="stroke-red-500 transition-all duration-75" stroke-width="6" stroke-dasharray="289.026" stroke-dashoffset="289.026" stroke-linecap="round" fill="transparent" />
+                </svg>
+
+                <!-- Central Button -->
+                <button id="main-sos-btn" class="relative z-10 w-48 h-48 rounded-full bg-gradient-to-tr from-red-700 via-red-600 to-rose-500 text-white shadow-2xl shadow-red-600/60 hover:shadow-red-500/90 active:scale-95 transition-all flex flex-col items-center justify-center select-none cursor-pointer border-4 border-red-400/40 animate-pulse-glow">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mb-1 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <span class="text-3xl md:text-4xl font-black tracking-wider drop-shadow-md">SOS</span>
+                  <span class="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-red-100 mt-1">${i18n.t('sosSubtitle')}</span>
+                </button>
+              </div>
+
+              <p class="mt-2 text-xs md:text-sm text-slate-500 dark:text-slate-400 max-w-md">
+                ${i18n.t('sosDesc')}
+              </p>
+            </div>
+
+            <!-- Quick Emergency Action Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <!-- WhatsApp Broadcast -->
+              <button id="quick-whatsapp-btn" class="glass-card hover:border-emerald-500/50 p-4 rounded-2xl flex flex-col sm:flex-row items-center sm:space-x-3 text-center sm:text-left transition group active:scale-98">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center group-hover:bg-emerald-500/30 transition shrink-0 mb-2 sm:mb-0">
+                  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                  </svg>
+                </div>
+                <div class="overflow-hidden">
+                  <div class="text-xs md:text-sm font-bold text-slate-900 dark:text-white truncate">${i18n.t('whatsapp')}</div>
+                  <div class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${primaryContact ? primaryContact.name : 'Primary'}</div>
+                </div>
+              </button>
+
+              <!-- SMS Broadcast -->
+              <button id="quick-sms-btn" class="glass-card hover:border-sky-500/50 p-4 rounded-2xl flex flex-col sm:flex-row items-center sm:space-x-3 text-center sm:text-left transition group active:scale-98">
+                <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-500 flex items-center justify-center group-hover:bg-sky-500/30 transition shrink-0 mb-2 sm:mb-0">
+                  <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </div>
+                <div class="overflow-hidden">
+                  <div class="text-xs md:text-sm font-bold text-slate-900 dark:text-white truncate">${i18n.t('smsAlert')}</div>
+                  <div class="text-[10px] text-slate-500 dark:text-slate-400 truncate">Direct Cell</div>
+                </div>
+              </button>
+
+              <!-- Loud Siren Toggle -->
+              <button id="quick-siren-btn" class="glass-card hover:border-amber-500/50 p-4 rounded-2xl flex flex-col sm:flex-row items-center sm:space-x-3 text-center sm:text-left transition group active:scale-98">
+                <div id="siren-icon-box" class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center group-hover:bg-amber-500/30 transition shrink-0 mb-2 sm:mb-0">
+                  <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                  </svg>
+                </div>
+                <div class="overflow-hidden">
+                  <div id="siren-text" class="text-xs md:text-sm font-bold text-slate-900 dark:text-white truncate">${i18n.t('sirenAlarm')}</div>
+                  <div id="siren-subtext" class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${i18n.t('sirenSubtext')}</div>
+                </div>
+              </button>
+
+              <!-- Emergency Hotline (112) -->
+              <a href="tel:${settings.emergencyHotline || '112'}" class="glass-card hover:border-rose-500/50 p-4 rounded-2xl flex flex-col sm:flex-row items-center sm:space-x-3 text-center sm:text-left transition group active:scale-98">
+                <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-500 flex items-center justify-center group-hover:bg-rose-500/30 transition shrink-0 mb-2 sm:mb-0">
+                  <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </div>
+                <div class="overflow-hidden">
+                  <div class="text-xs md:text-sm font-bold text-slate-900 dark:text-white truncate">${settings.emergencyHotline || '112'}</div>
+                  <div class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${i18n.t('callDispatch')}</div>
+                </div>
+              </a>
+            </div>
+
+            <!-- GPS Live Sentinel Status Banner -->
+            <div class="glass-card p-4 rounded-2xl border flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-slate-800 dark:text-slate-200">${i18n.t('sentinelActive')}</div>
+                  <div id="live-location-badge" class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">${i18n.t('locatingGps')}</div>
+                </div>
+              </div>
+              <button id="copy-gps-quick" class="text-xs bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 px-3.5 py-1.5 rounded-xl transition active:scale-95 font-bold">
+                ${i18n.t('copyGps')}
+              </button>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN (Desktop Command Hub Widgets) -->
+          <div class="lg:col-span-5 space-y-5">
+            <!-- Widget 1: Nearest Safe Havens & Location Quick Share -->
+            <div class="glass-card p-5 rounded-3xl border space-y-3">
+              <div class="flex items-center justify-between">
+                <h3 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                  <span>🛡️ ${i18n.t('safeHavensTitle')}</span>
+                </h3>
+                <button id="desktop-view-map-btn" class="text-[11px] text-cyan-500 hover:underline font-bold">
+                  Open Map →
+                </button>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2">
+                <button id="desk-find-police" class="p-3 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border flex flex-col items-center justify-center space-y-1 transition active:scale-95">
+                  <span class="text-lg">👮</span>
+                  <span class="text-[11px] font-bold text-slate-800 dark:text-slate-200">${i18n.t('police')}</span>
+                </button>
+                <button id="desk-find-hospital" class="p-3 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border flex flex-col items-center justify-center space-y-1 transition active:scale-95">
+                  <span class="text-lg">🏥</span>
+                  <span class="text-[11px] font-bold text-slate-800 dark:text-slate-200">${i18n.t('hospital')}</span>
+                </button>
+                <button id="desk-find-pharmacy" class="p-3 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border flex flex-col items-center justify-center space-y-1 transition active:scale-95">
+                  <span class="text-lg">💊</span>
+                  <span class="text-[11px] font-bold text-slate-800 dark:text-slate-200">${i18n.t('pharmacy')}</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Widget 2: AI Safety Quick Prompt -->
+            <div class="glass-card p-5 rounded-3xl border space-y-3">
+              <div class="flex items-center justify-between">
+                <h3 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                  <span>🤖 ${i18n.t('navChat')}</span>
+                </h3>
+                <span class="text-[10px] bg-cyan-500/10 text-cyan-500 px-2 py-0.5 rounded-full font-bold">2.0 Flash</span>
+              </div>
+              <p class="text-xs text-slate-600 dark:text-slate-400">
+                ${i18n.lang === 'hi' ? 'खतरे या आपातकालीन स्थिति में तुरंत चरण-दर-चरण सुरक्षा सलाह लें:' : 'Instant life-saving guidance for emergency de-escalation, CPR & first aid:'}
+              </p>
+              <div class="flex flex-wrap gap-2">
+                <button data-quick-chat="follow" class="quick-desk-chip text-[11px] px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold border transition">
+                  ${i18n.t('chipFollowed')}
+                </button>
+                <button data-quick-chat="cpr" class="quick-desk-chip text-[11px] px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold border transition">
+                  ${i18n.t('chipCpr')}
+                </button>
+                <button data-quick-chat="bleeding" class="quick-desk-chip text-[11px] px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold border transition">
+                  ${i18n.t('chipBleeding')}
+                </button>
+              </div>
+            </div>
+
+            <!-- Widget 3: Medical ID Quick Summary -->
+            <div class="glass-card p-5 rounded-3xl border flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-red-600/20 text-red-500 flex items-center justify-center font-black text-sm border border-red-500/30">
+                  ${profile.bloodType || '+'}
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-slate-900 dark:text-white">${profile.name || 'User Profile'}</div>
+                  <div class="text-[10px] text-slate-500 dark:text-slate-400">${profile.allergies ? `Allergies: ${profile.allergies}` : 'No known allergies'}</div>
+                </div>
+              </div>
+              <button id="desktop-view-qr-btn" class="text-xs px-3 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold transition">
+                View QR
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    this._bindEvents();
+    this._updateLocationBadge();
+  }
+
+  _bindEvents() {
+    const mainBtn = document.getElementById('main-sos-btn');
+    const ring = document.getElementById('sos-progress-ring');
+    const waBtn = document.getElementById('quick-whatsapp-btn');
+    const smsBtn = document.getElementById('quick-sms-btn');
+    const sirenBtn = document.getElementById('quick-siren-btn');
+    const copyGpsBtn = document.getElementById('copy-gps-quick');
+
+    const totalCircumference = 289.026;
+    let holdDuration = 1500;
+    let startTime = 0;
+
+    const startHold = (e) => {
+      e.preventDefault();
+      startTime = Date.now();
+      sound.playBeep(440, 100);
+
+      this.holdTimer = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const fraction = Math.min(elapsed / holdDuration, 1);
+        const offset = totalCircumference - (fraction * totalCircumference);
+        if (ring) ring.style.strokeDashoffset = offset;
+
+        if (fraction >= 1) {
+          clearInterval(this.holdTimer);
+          this.triggerFullSos();
+        }
+      }, 30);
+    };
+
+    const endHold = () => {
+      clearInterval(this.holdTimer);
+      if (ring) ring.style.strokeDashoffset = totalCircumference;
+    };
+
+    if (mainBtn) {
+      mainBtn.addEventListener('mousedown', startHold);
+      mainBtn.addEventListener('touchstart', startHold, { passive: false });
+      window.addEventListener('mouseup', endHold);
+      window.addEventListener('touchend', endHold);
+
+      mainBtn.addEventListener('click', () => {
+        const elapsed = Date.now() - startTime;
+        if (elapsed < 300) {
+          this.triggerFullSos();
+        }
+      });
+    }
+
+    if (waBtn) waBtn.addEventListener('click', () => this.dispatchWhatsApp());
+    if (smsBtn) smsBtn.addEventListener('click', () => this.dispatchSms());
+
+    if (sirenBtn) {
+      sirenBtn.addEventListener('click', () => {
+        const isPlaying = sound.toggleSiren();
+        this._updateSirenUi(isPlaying);
+      });
+    }
+
+    if (copyGpsBtn) {
+      copyGpsBtn.addEventListener('click', async () => {
+        const pos = await locationService.getCurrentLocation();
+        const url = locationService.getGoogleMapsUrl(pos.latitude, pos.longitude);
+        await navigator.clipboard.writeText(url);
+        copyGpsBtn.innerText = i18n.t('copied');
+        setTimeout(() => {
+          copyGpsBtn.innerText = i18n.t('copyGps');
+        }, 2000);
+      });
+    }
+
+    // Desktop helper shortcuts
+    const mapNavBtn = document.getElementById('desktop-view-map-btn');
+    if (mapNavBtn) {
+      mapNavBtn.addEventListener('click', () => {
+        document.querySelector('[data-tab="map"]')?.click();
+      });
+    }
+
+    const qrNavBtn = document.getElementById('desktop-view-qr-btn');
+    if (qrNavBtn) {
+      qrNavBtn.addEventListener('click', () => {
+        document.querySelector('[data-tab="profile"]')?.click();
+      });
+    }
+
+    const bindSearch = (btnId, query) => {
+      const btn = document.getElementById(btnId);
+      if (btn) {
+        btn.addEventListener('click', async () => {
+          const pos = await locationService.getCurrentLocation();
+          const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(query)}/@${pos.latitude},${pos.longitude},14z`;
+          window.open(searchUrl, '_blank');
+        });
+      }
+    };
+
+    bindSearch('desk-find-police', 'Police Station near me');
+    bindSearch('desk-find-hospital', 'Emergency Hospital near me');
+    bindSearch('desk-find-pharmacy', '24 Hour Pharmacy near me');
+
+    document.querySelectorAll('.quick-desk-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelector('[data-tab="chat"]')?.click();
+      });
+    });
+
+    window.addEventListener('safetynet:siren-changed', (e) => {
+      this._updateSirenUi(e.detail.isPlaying);
+    });
+  }
+
+  _updateSirenUi(isPlaying) {
+    const iconBox = document.getElementById('siren-icon-box');
+    const text = document.getElementById('siren-text');
+    const subtext = document.getElementById('siren-subtext');
+
+    if (iconBox && text) {
+      if (isPlaying) {
+        iconBox.className = 'w-10 h-10 rounded-xl bg-red-500 text-white flex items-center justify-center animate-pulse shrink-0 mb-2 sm:mb-0';
+        text.innerText = i18n.t('sirenPlaying');
+        subtext.innerText = i18n.t('sirenActiveSubtext');
+      } else {
+        iconBox.className = 'w-10 h-10 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0 mb-2 sm:mb-0';
+        text.innerText = i18n.t('sirenAlarm');
+        subtext.innerText = i18n.t('sirenSubtext');
+      }
+    }
+  }
+
+  async _updateLocationBadge() {
+    try {
+      const pos = await locationService.getCurrentLocation();
+      const badge = document.getElementById('live-location-badge');
+      if (badge) {
+        badge.innerText = `GPS: ${pos.latitude.toFixed(4)}, ${pos.longitude.toFixed(4)} (±${Math.round(pos.accuracy)}m)`;
+      }
+    } catch (e) {}
+  }
+
+  async triggerFullSos() {
+    const profile = storage.getProfile();
+    const settings = storage.getSettings();
+
+    sound.playSiren(settings.sirenVolume || 0.9);
+
+    const message = await locationService.formatEmergencyMessage(profile, settings.customSosMessage);
+    const primaryContact = profile.contacts.find(c => c.isPrimary) || profile.contacts[0];
+    const phone = primaryContact?.phone || '';
+
+    this._showSosModal(message, phone, profile);
+
+    if (settings.speechFeedback) {
+      sound.speak(i18n.lang === 'hi' ? 'आपातकालीन एसओएस सक्रिय हो गया है।' : 'Emergency SOS triggered. Broadcast alert ready.');
+    }
+  }
+
+  async dispatchWhatsApp() {
+    const profile = storage.getProfile();
+    const settings = storage.getSettings();
+    const primary = profile.contacts.find(c => c.isPrimary) || profile.contacts[0];
+    const message = await locationService.formatEmergencyMessage(profile, settings.customSosMessage);
+    const link = locationService.getWhatsAppLink(primary?.phone || '', message);
+    window.open(link, '_blank');
+  }
+
+  async dispatchSms() {
+    const profile = storage.getProfile();
+    const settings = storage.getSettings();
+    const primary = profile.contacts.find(c => c.isPrimary) || profile.contacts[0];
+    const message = await locationService.formatEmergencyMessage(profile, settings.customSosMessage);
+    const link = locationService.getSmsLink(primary?.phone || '', message);
+    window.location.href = link;
+  }
+
+  _showSosModal(message, phone, profile) {
+    const existing = document.getElementById('sos-modal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'sos-modal';
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in';
+
+    const waLink = locationService.getWhatsAppLink(phone, message);
+    const smsLink = locationService.getSmsLink(phone, message);
+
+    modal.innerHTML = `
+      <div class="glass-card max-w-lg w-full p-6 md:p-8 rounded-3xl border-2 border-red-500/80 shadow-2xl text-center space-y-5 animate-scale-up">
+        <div class="w-16 h-16 bg-red-600/20 text-red-500 rounded-full flex items-center justify-center mx-auto border border-red-500/40 animate-pulse">
+          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+
+        <div>
+          <h2 class="text-2xl font-black text-slate-900 dark:text-white">${i18n.t('emergencyBroadcastTitle')}</h2>
+          <p class="text-xs text-red-500 dark:text-red-300 mt-1">${i18n.t('emergencyBroadcastSub')}</p>
+        </div>
+
+        <div class="p-4 bg-slate-100 dark:bg-slate-900/90 rounded-2xl text-left border border-slate-300 dark:border-slate-800 text-xs font-mono text-slate-800 dark:text-slate-300 max-h-40 overflow-y-auto whitespace-pre-wrap select-all">
+          ${message}
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <a href="${waLink}" target="_blank" class="py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs md:text-sm flex items-center justify-center space-x-2 transition shadow-lg">
+            <span>${i18n.t('sendWhatsapp')}</span>
+          </a>
+          <a href="${smsLink}" class="py-3.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs md:text-sm flex items-center justify-center space-x-2 transition shadow-lg">
+            <span>${i18n.t('sendSms')}</span>
+          </a>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <button id="modal-share-btn" class="flex-1 py-2.5 px-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold flex items-center justify-center space-x-1 transition">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+            <span>${i18n.t('shareToApp')}</span>
+          </button>
+          <button id="modal-silence-btn" class="py-2.5 px-4 rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-300 text-xs font-semibold border border-rose-300 dark:border-rose-800/50 transition">
+            ${i18n.t('sirenPlaying')}
+          </button>
+        </div>
+
+        <button id="modal-dismiss-btn" class="w-full py-2 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-medium">
+          ${i18n.t('dismissAlert')}
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector('#modal-dismiss-btn').addEventListener('click', () => {
+      sound.stopSiren();
+      modal.remove();
+    });
+
+    modal.querySelector('#modal-silence-btn').addEventListener('click', () => {
+      sound.stopSiren();
+    });
+
+    modal.querySelector('#modal-share-btn').addEventListener('click', async () => {
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'SafetyNet Emergency Alert', text: message });
+        } catch (e) {}
+      } else {
+        await navigator.clipboard.writeText(message);
+        alert(i18n.t('copied'));
+      }
+    });
+  }
+}

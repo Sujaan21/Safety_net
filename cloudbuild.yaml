@@ -1,0 +1,27 @@
+﻿steps:
+  # 1. Build the container image using Dockerfile
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/safetynet:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/safetynet:latest', '.']
+
+  # 2. Push image to Google Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/safetynet:$COMMIT_SHA']
+
+  # 3. Deploy to Google Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'safetynet'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/safetynet:$COMMIT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+
+images:
+  - 'gcr.io/$PROJECT_ID/safetynet:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/safetynet:latest'

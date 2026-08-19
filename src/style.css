@@ -1,0 +1,90 @@
+﻿:root {
+  --bg-main: #070b14;
+  --bg-surface: #0b1324;
+  --card-bg: rgba(15, 23, 42, 0.75);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --nav-bg: rgba(11, 19, 36, 0.85);
+  --input-bg: rgba(15, 23, 42, 0.9);
+  --input-border: rgba(51, 65, 85, 0.8);
+}
+
+.light, html.light, body.light {
+  --bg-main: #ffffff !important;
+  --bg-surface: #f8fafc !important;
+  --card-bg: #ffffff !important;
+  --card-border: #e2e8f0 !important;
+  --text-main: #0f172a !important;
+  --text-muted: #475569 !important;
+  --nav-bg: rgba(255, 255, 255, 0.95) !important;
+  --input-bg: #f8fafc !important;
+  --input-border: #cbd5e1 !important;
+}
+
+html, body {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.glass-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+}
+
+.dark .glass-card {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+}
+
+.glass-nav {
+  background: var(--nav-bg);
+  border-color: var(--card-border);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 45px rgba(239, 68, 68, 0.8); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
+
+.leaflet-container {
+  background-color: var(--bg-surface) !important;
+  font-family: inherit !important;
+}
+
+.leaflet-control-attribution {
+  font-size: 8px !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  color: #94a3b8 !important;
+}
+
+.leaflet-control-attribution a {
+  color: #38bdf8 !important;
+}

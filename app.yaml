@@ -1,0 +1,19 @@
+﻿runtime: nodejs22
+instance_class: F1
+
+handlers:
+  # Serve static files from the dist directory
+  - url: /(.*\.(js|css|png|jpg|svg|ico|json|woff2?|ttf|eot))$
+    static_files: dist/\1
+    upload: dist/(.*\.(js|css|png|jpg|svg|ico|json|woff2?|ttf|eot))$
+    secure: always
+    http_headers:
+      Strict-Transport-Security: max-age=31536000; includeSubDomains
+      X-Frame-Options: SAMEORIGIN
+      X-Content-Type-Options: nosniff
+
+  # Catch-all for Single Page Application routing
+  - url: /.*
+    static_files: dist/index.html
+    upload: dist/index.html
+    secure: always
