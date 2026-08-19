@@ -5,10 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>SafetyNet — Personal Safety Sentinel & Command Center</title>
   
-  <!-- Security Headers & Content Security Policy -->
+  <!-- Content Security Policy & Security Headers -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org; connect-src 'self' https://generativelanguage.googleapis.com https://nominatim.openstreetmap.org https://overpass-api.de; media-src 'self' blob:; worker-src 'self' blob:;" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#070b14" />
@@ -22,6 +26,10 @@
       darkMode: 'class',
       theme: {
         extend: {
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
           colors: {
             brand: {
               500: '#06b6d4',
@@ -33,18 +41,29 @@
     }
   </script>
 </head>
-<body class="bg-white dark:bg-[#070b14] text-slate-900 dark:text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden antialiased transition-colors duration-200">
+<body class="bg-slate-50 dark:bg-[#070b14] text-slate-900 dark:text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden antialiased transition-colors duration-200">
 
-  <!-- Stealth Camouflage Overlay (Calculator Disguise) -->
-  <div id="camouflage-screen" class="hidden fixed inset-0 z-50 bg-[#121214] text-white flex-col justify-center items-center p-6 select-none">
-    <div class="w-full max-w-xs bg-[#1c1c1e] rounded-3xl p-5 shadow-2xl border border-white/10 space-y-4">
-      <div class="flex items-center justify-between text-xs text-slate-400 pb-1 border-b border-white/10">
-        <span>Standard Calculator</span>
-        <button id="exit-camo-btn" class="text-[10px] px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-slate-300 font-mono">Exit (ESC)</button>
+  <!-- Stealth Camouflage Overlay (Disguise Mode) -->
+  <div id="camouflage-screen" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md text-white flex flex-col justify-center items-center p-4 select-none animate-fade-in">
+    <div class="w-full max-w-xs bg-[#1c1c1e] rounded-3xl p-5 shadow-2xl border border-white/15 space-y-4">
+      
+      <!-- Top Title & Big Obvious Close Button -->
+      <div class="flex items-center justify-between text-xs text-slate-300 pb-2 border-b border-white/10">
+        <div class="flex items-center space-x-1.5 font-bold">
+          <span>🧮</span>
+          <span>Stealth Disguise Mode</span>
+        </div>
+        <button id="exit-camo-btn" class="px-3 py-1 rounded-xl bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white font-bold text-xs border border-red-500/40 transition">
+          ✕ Close
+        </button>
       </div>
-      <div id="calc-display" class="bg-black/60 rounded-2xl p-4 text-right text-3xl font-mono tracking-wider overflow-x-auto text-cyan-400">
+
+      <!-- Calculator Display -->
+      <div id="calc-display" class="bg-black/70 rounded-2xl p-4 text-right text-3xl font-mono tracking-wider overflow-x-auto text-cyan-400 border border-white/5">
         0
       </div>
+
+      <!-- Keypad -->
       <div class="grid grid-cols-4 gap-2.5 text-base font-semibold">
         <button class="calc-key p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c] text-rose-400">C</button>
         <button class="calc-key p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c] text-slate-300">±</button>
@@ -70,6 +89,12 @@
         <button class="calc-key p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c]">.</button>
         <button class="calc-key p-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white">=</button>
       </div>
+
+      <!-- Bottom Close Button -->
+      <button id="exit-camo-btn-bottom" class="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 font-bold text-xs transition">
+        ✕ Return to Safety Dashboard (ESC)
+      </button>
+
     </div>
   </div>
 
@@ -81,7 +106,7 @@
   </div>
 
   <!-- Full-Width Top Navigation Bar -->
-  <header class="w-full sticky top-0 z-30 bg-white/90 dark:bg-[#0b1324]/85 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800/80 px-4 md:px-8 py-3.5 transition-colors shadow-sm">
+  <header class="w-full sticky top-0 z-30 bg-white/90 dark:bg-[#0b1324]/85 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800/80 px-4 md:px-8 py-3 transition-colors shadow-sm">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
       <!-- Logo & Sentinel Status -->
       <div class="flex items-center space-x-3 cursor-pointer select-none" id="logo-refresh-trigger">
@@ -125,11 +150,6 @@
 
       <!-- Action Controls: Camouflage, Language, Theme, Siren & User Profile -->
       <div class="flex items-center space-x-2">
-        <!-- Stealth Quick Disguise Button -->
-        <button id="header-camo-btn" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold border border-slate-300 dark:border-slate-700/60 transition active:scale-95 shadow-sm" title="Stealth Disguise Mode (Calculator)">
-          <span>🧮</span>
-        </button>
-
         <!-- Dual Language Toggle (EN / HI) -->
         <button id="header-lang-btn" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold border border-slate-300 dark:border-slate-700/60 transition active:scale-95 flex items-center space-x-1.5 shadow-sm" title="Change Language / भाषा बदलें">
           <span id="lang-flag">🇮🇳</span>
@@ -201,50 +221,87 @@
 
   <script type="module" src="/src/main.js"></script>
   <script>
-    // Calculator Camouflage Engine
+    // Robust Standard Calculator Arithmetic Engine (Zero eval, 100% CSP compliant)
     (function() {
+      let prevVal = null;
       let currentVal = '0';
+      let pendingOp = null;
+      let overwrite = false;
+
       const display = document.getElementById('calc-display');
-      const exitBtn = document.getElementById('exit-camo-btn');
-      
-      if (exitBtn) {
-        exitBtn.addEventListener('click', () => {
-          const camo = document.getElementById('camouflage-screen');
-          if (camo) {
-            camo.classList.add('hidden');
-            camo.classList.remove('flex');
-          }
-        });
+      const closeCamo = () => {
+        const camo = document.getElementById('camouflage-screen');
+        if (camo) {
+          camo.classList.add('hidden');
+          camo.classList.remove('flex');
+        }
+      };
+
+      document.getElementById('exit-camo-btn')?.addEventListener('click', closeCamo);
+      document.getElementById('exit-camo-btn-bottom')?.addEventListener('click', closeCamo);
+
+      function calculate(a, b, op) {
+        const num1 = parseFloat(a);
+        const num2 = parseFloat(b);
+        if (isNaN(num1) || isNaN(num2)) return '0';
+        switch (op) {
+          case '+': return String(num1 + num2);
+          case '−':
+          case '-': return String(num1 - num2);
+          case '×':
+          case '*': return String(num1 * num2);
+          case '÷':
+          case '/': return num2 === 0 ? '0' : String(num1 / num2);
+          default: return String(num2);
+        }
       }
 
       document.querySelectorAll('.calc-key').forEach(btn => {
         btn.addEventListener('click', () => {
-          const char = btn.innerText.trim();
-          if (char === 'C') {
-            currentVal = '0';
-          } else if (char === '=') {
-            try {
-              const safeExp = currentVal.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
-              if (/^[0-9+\-*/. ]+$/.test(safeExp)) {
-                currentVal = String(Function('"use strict";return (' + safeExp + ')')());
-              }
-            } catch {
-              currentVal = 'Error';
-            }
-          } else if (char === '±') {
-            if (currentVal !== '0') {
-              currentVal = currentVal.startsWith('-') ? currentVal.slice(1) : '-' + currentVal;
-            }
-          } else if (char === '%') {
-            currentVal = String(parseFloat(currentVal) / 100);
-          } else {
-            if (currentVal === '0' || currentVal === 'Error') {
-              currentVal = char;
+          const key = btn.innerText.trim();
+
+          if (key >= '0' && key <= '9') {
+            if (currentVal === '0' || overwrite) {
+              currentVal = key;
+              overwrite = false;
             } else {
-              currentVal += char;
+              currentVal += key;
+            }
+          } else if (key === '.') {
+            if (overwrite) {
+              currentVal = '0.';
+              overwrite = false;
+            } else if (!currentVal.includes('.')) {
+              currentVal += '.';
+            }
+          } else if (key === 'C') {
+            currentVal = '0';
+            prevVal = null;
+            pendingOp = null;
+            overwrite = false;
+          } else if (key === '±') {
+            currentVal = String(parseFloat(currentVal) * -1);
+          } else if (key === '%') {
+            currentVal = String(parseFloat(currentVal) / 100);
+          } else if (['+', '−', '×', '÷'].includes(key)) {
+            if (pendingOp && !overwrite) {
+              currentVal = calculate(prevVal, currentVal, pendingOp);
+            }
+            prevVal = currentVal;
+            pendingOp = key;
+            overwrite = true;
+          } else if (key === '=') {
+            if (pendingOp && prevVal !== null) {
+              currentVal = calculate(prevVal, currentVal, pendingOp);
+              pendingOp = null;
+              prevVal = null;
+              overwrite = true;
             }
           }
-          if (display) display.innerText = currentVal;
+
+          if (display) {
+            display.innerText = currentVal.length > 10 ? parseFloat(currentVal).toPrecision(6) : currentVal;
+          }
         });
       });
     })();

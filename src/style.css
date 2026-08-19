@@ -1,4 +1,6 @@
-﻿:root {
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+
+:root {
   --bg-main: #070b14;
   --bg-surface: #0b1324;
   --card-bg: rgba(15, 23, 42, 0.75);
@@ -11,9 +13,9 @@
 }
 
 .light, html.light, body.light {
-  --bg-main: #ffffff !important;
-  --bg-surface: #f8fafc !important;
-  --card-bg: #ffffff !important;
+  --bg-main: #f8fafc !important;
+  --bg-surface: #ffffff !important;
+  --card-bg: rgba(255, 255, 255, 0.9) !important;
   --card-border: #e2e8f0 !important;
   --text-main: #0f172a !important;
   --text-muted: #475569 !important;
@@ -26,26 +28,33 @@ html, body {
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+code, pre, .font-mono {
+  font-family: 'JetBrains Mono', monospace !important;
 }
 
 .glass-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .dark .glass-card {
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 14px 35px -5px rgba(0, 0, 0, 0.4), 0 8px 15px -6px rgba(0, 0, 0, 0.3);
 }
 
-.glass-nav {
-  background: var(--nav-bg);
-  border-color: var(--card-border);
+.glass-hud {
+  background: rgba(7, 11, 20, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(6, 182, 212, 0.1);
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -63,7 +72,12 @@ html, body {
 
 @keyframes pulseGlow {
   0%, 100% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.4); }
-  50% { box-shadow: 0 0 45px rgba(239, 68, 68, 0.8); }
+  50% { box-shadow: 0 0 45px rgba(239, 68, 68, 0.85); }
+}
+
+@keyframes radarSweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .animate-fade-in {
@@ -83,8 +97,27 @@ html, body {
   font-size: 8px !important;
   background: rgba(0, 0, 0, 0.5) !important;
   color: #94a3b8 !important;
+  border-radius: 6px;
+  margin: 4px !important;
 }
 
 .leaflet-control-attribution a {
   color: #38bdf8 !important;
+}
+
+/* Custom Marker Tooltip Styling */
+.leaflet-tooltip-custom {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border: 1px solid rgba(6, 182, 212, 0.4) !important;
+  color: #ffffff !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  border-radius: 10px !important;
+  padding: 4px 8px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
+}
+
+.leaflet-tooltip-custom:before {
+  border-top-color: rgba(15, 23, 42, 0.9) !important;
 }
