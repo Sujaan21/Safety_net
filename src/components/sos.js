@@ -51,7 +51,7 @@ export class SosComponent {
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           <!-- LEFT / MAIN COLUMN: SOS Button & Quick Actions -->
-          <div class="lg:col-span-7 space-y-6">
+          <div class="lg:col-span-7 space-y-5">
             <!-- Hero SOS Trigger Card -->
             <div class="glass-card p-6 md:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 relative overflow-hidden flex flex-col items-center justify-center text-center shadow-xl">
               <!-- Ambient Glow background -->
@@ -83,6 +83,23 @@ export class SosComponent {
                 ${i18n.t('sosDesc')}
               </p>
             </div>
+
+            <!-- DEDICATED 1-TOUCH DIRECT OFFLINE SOS ACTION BAR -->
+            <button id="direct-touch-offline-btn" class="w-full py-4 px-5 rounded-3xl bg-gradient-to-r from-sky-600 via-blue-600 to-cyan-600 hover:from-sky-500 hover:to-cyan-500 text-white font-black text-sm shadow-xl shadow-sky-600/25 border-2 border-sky-400/40 active:scale-98 transition flex items-center justify-between group">
+              <div class="flex items-center space-x-3 text-left">
+                <span class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-xl group-hover:scale-110 transition">
+                  ⚡
+                </span>
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <span class="font-extrabold uppercase tracking-wide">1-Touch Offline SOS</span>
+                    <span class="px-2 py-0.5 rounded-full bg-white/20 text-[9px] font-mono uppercase">Direct SMS</span>
+                  </div>
+                  <p class="text-[11px] text-sky-100 font-normal">Instant cellular SMS to ${primaryContact.name} with cached GPS (Zero internet required)</p>
+                </div>
+              </div>
+              <span class="text-lg text-sky-200 group-hover:translate-x-1 transition font-bold">→</span>
+            </button>
 
             <!-- Quick Emergency Action Grid -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -236,6 +253,14 @@ export class SosComponent {
       mainSosBtn.addEventListener('touchend', cancelHold);
     }
 
+    // Direct 1-Touch Offline SOS Button (Instant cellular SMS dispatch without hold/modal barrier)
+    const directTouchOfflineBtn = this.container.querySelector('#direct-touch-offline-btn');
+    if (directTouchOfflineBtn) {
+      directTouchOfflineBtn.addEventListener('click', () => {
+        this.dispatchDirectTouchOfflineSms();
+      });
+    }
+
     const quickWa = this.container.querySelector('#quick-whatsapp-btn');
     if (quickWa) quickWa.addEventListener('click', () => this.dispatchWhatsApp());
 
@@ -244,6 +269,28 @@ export class SosComponent {
 
     const quickSiren = this.container.querySelector('#quick-siren-btn');
     if (quickSiren) quickSiren.addEventListener('click', () => sound.toggleSiren());
+  }
+
+  async dispatchDirectTouchOfflineSms() {
+    const profile = storage.getProfile();
+    const settings = storage.getSettings();
+    const prioritized = aiSentinel.prioritizeEmergencyContacts(profile.contacts || [], 'CRITICAL');
+    const primary = prioritized[0] || { name: 'Emergency Dispatch', phone: settings.emergencyHotline || '112' };
+
+    // Queue alert
+    const message = await locationService.formatEmergencyMessage(profile, settings.customSosMessage, true);
+    this._queueOfflineSos({
+      timestamp: Date.now(),
+      message,
+      phone: primary.phone
+    });
+
+    if (settings.speechFeedback) {
+      sound.speak(i18n.lang === 'hi' ? 'ऑफ़लाइन एसओएस एसएमएस भेजा जा रहा है।' : 'Dispatching offline emergency SMS.');
+    }
+
+    const smsLink = locationService.getSmsLink(primary.phone || '', message);
+    window.location.href = smsLink;
   }
 
   async _updateLocationBadge() {
