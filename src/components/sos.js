@@ -3,6 +3,7 @@ import { sound } from '../services/sound.js';
 import { locationService } from '../services/location.js';
 import { i18n } from '../services/i18n.js';
 import { aiSentinel } from '../services/ai-sentinel.js';
+import { regionalHelplines, REGIONAL_HELPLINES } from '../services/regional-helplines.js';
 
 const OFFLINE_SOS_QUEUE_KEY = 'safetynet_offline_sos_queue_v1';
 
@@ -11,6 +12,7 @@ export class SosComponent {
     this.container = container;
     this.holdTimer = null;
     this.isOffline = !navigator.onLine;
+    this.selectedState = regionalHelplines.detectStateFromAddress(locationService.currentAddress || '');
 
     window.addEventListener('online', () => {
       this.isOffline = false;
@@ -29,6 +31,9 @@ export class SosComponent {
     const settings = storage.getSettings();
     const prioritizedContacts = aiSentinel.prioritizeEmergencyContacts(profile.contacts || [], 'HIGH');
     const primaryContact = prioritizedContacts[0] || { name: 'Emergency Dispatch (112)', phone: '112' };
+
+    const availableStates = regionalHelplines.getAvailableStates();
+    const currentHotlines = regionalHelplines.getStateHelplines(this.selectedState);
 
     this.container.innerHTML = `
       <div class="space-y-6 animate-fade-in w-full">
@@ -50,7 +55,7 @@ export class SosComponent {
         <!-- Desktop Grid Layout: 2 Columns on LG screens -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
-          <!-- LEFT / MAIN COLUMN: SOS Button & Quick Actions -->
+          <!-- LEFT / MAIN COLUMN: SOS Button, Quick Actions & Regional Helplines -->
           <div class="lg:col-span-7 space-y-5">
             <!-- Hero SOS Trigger Card -->
             <div class="glass-card p-6 md:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 relative overflow-hidden flex flex-col items-center justify-center text-center shadow-xl">
@@ -155,9 +160,53 @@ export class SosComponent {
                 </div>
               </a>
             </div>
+
+            <!-- REGIONAL & NORTHEAST STATE EMERGENCY DIRECTORY -->
+            <div class="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4 shadow-xl">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center space-x-2">
+                  <span class="text-xl">🏛️</span>
+                  <div>
+                    <h3 class="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                      Regional & Northeast Emergency Hotlines
+                    </h3>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400">Direct 1-tap dial for state police, women crisis lines & disaster management.</p>
+                  </div>
+                </div>
+
+                <!-- State Filter Dropdown -->
+                <select id="state-helpline-select" class="bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-bold px-3 py-1.5 rounded-xl focus:outline-none focus:border-cyan-500">
+                  ${availableStates.map(st => `
+                    <option value="${st}" ${st === this.selectedState ? 'selected' : ''}>
+                      ${REGIONAL_HELPLINES.states[st].region === 'Northeast' ? '🌿 ' : '📍 '}${st}
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
+
+              <!-- State Helplines Grid -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                ${currentHotlines.map(h => `
+                  <div class="p-3 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 flex items-center justify-between hover:border-cyan-500/40 transition">
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                      <span class="text-xl shrink-0">${h.icon}</span>
+                      <div class="overflow-hidden">
+                        <p class="font-bold text-xs text-slate-900 dark:text-white truncate">${h.title}</p>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${h.desc}</p>
+                      </div>
+                    </div>
+                    <a href="tel:${h.number}" class="shrink-0 ml-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-[11px] shadow-md flex items-center space-x-1">
+                      <span>📞</span>
+                      <span>${h.number}</span>
+                    </a>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
           </div>
 
-          <!-- RIGHT COLUMN: AI Contact Prioritization & Live Status -->
+          <!-- RIGHT COLUMN: AI Contact Prioritization, Telemetry & Stealth Tips -->
           <div class="lg:col-span-5 space-y-5">
             <!-- AI Contact Dispatch Prioritization -->
             <div class="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-3">
@@ -244,6 +293,14 @@ export class SosComponent {
   }
 
   _bindEvents() {
+    const stateSelect = this.container.querySelector('#state-helpline-select');
+    if (stateSelect) {
+      stateSelect.addEventListener('change', (e) => {
+        this.selectedState = e.target.value;
+        this.render();
+      });
+    }
+
     const mainSosBtn = this.container.querySelector('#main-sos-btn');
     const ring = this.container.querySelector('#sos-progress-ring');
 
