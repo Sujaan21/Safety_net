@@ -198,6 +198,41 @@ export class SosComponent {
                 Emergency packets auto-include high-precision coordinate anchors, device battery telemetry, and local medical ID tokens.
               </p>
             </div>
+
+            <!-- Stealth & Anti-Coercion Educational Tip Card -->
+            <div class="glass-card p-5 rounded-3xl border border-cyan-500/20 bg-cyan-500/5 space-y-3">
+              <div class="flex items-center justify-between text-xs">
+                <h4 class="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <span>🛡️ Stealth & Anti-Coercion Tools</span>
+                </h4>
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-cyan-500/20 text-cyan-600 dark:text-cyan-400">Privacy</span>
+              </div>
+              
+              <div class="space-y-2 text-xs">
+                <!-- Camouflage Feature Tip -->
+                <div class="p-2.5 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-start space-x-2.5">
+                  <span class="text-base shrink-0">🧮</span>
+                  <div>
+                    <p class="font-bold text-slate-900 dark:text-white">Stealth Camouflage Mode</p>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                      Press <kbd class="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-mono text-[9px]">ESC</kbd> or tap <strong>🧮 Disguise</strong> in the top header to instantly camouflage SafetyNet into a functioning standard calculator if someone approaches.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Duress PIN Feature Tip -->
+                <div class="p-2.5 rounded-2xl bg-white/60 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-start space-x-2.5">
+                  <span class="text-base shrink-0">🎭</span>
+                  <div>
+                    <p class="font-bold text-slate-900 dark:text-white">Duress / Silent SOS PIN</p>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                      Configuring a secondary decoy PIN secretly broadcasts silent emergency distress telemetry with live GPS to your contacts if forced to unlock.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
         </div>
