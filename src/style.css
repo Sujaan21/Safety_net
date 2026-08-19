@@ -75,11 +75,6 @@ code, pre, .font-mono {
   50% { box-shadow: 0 0 45px rgba(239, 68, 68, 0.85); }
 }
 
-@keyframes radarSweep {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 .animate-fade-in {
   animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -88,8 +83,21 @@ code, pre, .font-mono {
   animation: pulseGlow 2.5s infinite ease-in-out;
 }
 
+/* Ensure Leaflet Canvas fills 100% of container */
+#leaflet-map-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  background-color: #070b14 !important;
+}
+
 .leaflet-container {
-  background-color: var(--bg-surface) !important;
+  width: 100% !important;
+  height: 100% !important;
+  background-color: #070b14 !important;
   font-family: inherit !important;
 }
 

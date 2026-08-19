@@ -61,7 +61,7 @@ export class MapComponent {
           
           <!-- LEFT / MAIN MAP CANVAS -->
           <div class="lg:col-span-8 relative rounded-3xl overflow-hidden border-2 border-slate-200 dark:border-cyan-500/30 shadow-2xl h-[460px] md:h-[600px] bg-slate-950">
-            <div id="leaflet-map-canvas" class="w-full h-full z-0"></div>
+            <div id="leaflet-map-canvas" class="w-full h-full min-h-[460px] md:min-h-[600px] z-0"></div>
 
             <!-- TOP FLOATING HUD: Live Telemetry & Satellite Status -->
             <div class="absolute top-4 left-4 right-4 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
@@ -93,16 +93,22 @@ export class MapComponent {
                 <span class="text-2xl">⚠️</span>
                 <div>
                   <p class="font-black text-sm uppercase">AI Route Deviation Warning</p>
-                  <p id="map-ai-alert-msg" class="text-[11px] text-rose-300">You have drifted 180m off your verified safe walking route.</p>
+                  <p id="map-ai-alert-msg" class="text-[11px] text-rose-300">You have drifted off your verified safe walking route.</p>
                 </div>
               </div>
               <button id="btn-dismiss-ai-alert" class="px-3 py-1.5 bg-rose-700 hover:bg-rose-600 rounded-xl text-white font-bold text-xs">Dismiss</button>
             </div>
 
+            <!-- Toast Alert for Auto-Follow Center -->
+            <div id="map-center-toast" class="hidden absolute bottom-20 left-1/2 -translate-x-1/2 z-20 bg-slate-900/90 backdrop-blur-md border border-cyan-500/40 text-cyan-300 px-4 py-2 rounded-2xl text-xs font-bold shadow-2xl animate-fade-in flex items-center space-x-2">
+              <span>🎯</span>
+              <span id="map-center-toast-text">Location Centered</span>
+            </div>
+
             <!-- FLOATING MAP CONTROLS (Bottom Right) -->
             <div class="absolute bottom-5 right-5 z-10 flex flex-col space-y-2.5 pointer-events-auto">
-              <!-- Auto-Follow Toggle -->
-              <button id="toggle-autofollow-btn" title="Toggle Auto-Follow Center" class="w-12 h-12 rounded-2xl ${this.autoFollow ? 'bg-gradient-to-tr from-cyan-600 to-blue-600 text-white shadow-cyan-500/40 ring-2 ring-cyan-400' : 'bg-slate-900/90 text-slate-400'} border border-white/20 shadow-2xl flex items-center justify-center transition active:scale-90 text-lg">
+              <!-- Auto-Follow / Center Button -->
+              <button id="toggle-autofollow-btn" title="Center & Auto-Follow User Location" class="w-12 h-12 rounded-2xl ${this.autoFollow ? 'bg-gradient-to-tr from-cyan-600 to-blue-600 text-white shadow-cyan-500/50 ring-2 ring-cyan-300' : 'bg-slate-900/90 text-slate-400'} border border-white/20 shadow-2xl flex items-center justify-center transition active:scale-90 text-lg">
                 🎯
               </button>
 
@@ -116,7 +122,7 @@ export class MapComponent {
                 −
               </button>
 
-              <!-- Recenter Floating Button -->
+              <!-- Recenter Instant Button -->
               <button id="recenter-map-btn" title="${i18n.t('recenterMap')}" class="w-12 h-12 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-cyan-400 border border-white/20 shadow-2xl flex items-center justify-center transition active:scale-90">
                 <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
               </button>
@@ -284,6 +290,17 @@ export class MapComponent {
     this._renderAiRiskOverlays(lat, lng);
     this._updateHudUi(this.currentCoords);
 
+    // Invalidate map size multiple times to ensure 100% full container fill (prevents white blank tiles)
+    const invalidate = () => {
+      if (this.map) {
+        this.map.invalidateSize({ animate: false });
+      }
+    };
+    invalidate();
+    setTimeout(invalidate, 100);
+    setTimeout(invalidate, 300);
+    setTimeout(invalidate, 700);
+
     // Start continuous tracking
     locationService.startTracking((newCoords, breadcrumbs) => {
       if (!this.map) return;
@@ -300,7 +317,7 @@ export class MapComponent {
       }
 
       if (this.autoFollow) {
-        this.map.panTo(newLatLng, { animate: true, duration: 0.8 });
+        this.map.panTo(newLatLng, { animate: true, duration: 0.6 });
       }
 
       this._updateHudUi(newCoords);
@@ -319,7 +336,7 @@ export class MapComponent {
         this.accuracyCircle.setLatLng(freshLatLng);
         this._updateHudUi(freshCoords);
         if (this.autoFollow) {
-          this.map.flyTo(freshLatLng, 16, { duration: 1.0 });
+          this.map.setView(freshLatLng, 16, { animate: true });
         }
       }
     });
@@ -427,7 +444,46 @@ export class MapComponent {
     }
   }
 
+  _showCenterToast(msg) {
+    const toast = this.container.querySelector('#map-center-toast');
+    const text = this.container.querySelector('#map-center-toast-text');
+    if (toast && text) {
+      text.innerText = msg;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 2200);
+    }
+  }
+
+  async centerOnUserLocation(zoom = 16) {
+    if (!this.map) return;
+    
+    // Invalidate bounds first so center is pixel-perfect
+    this.map.invalidateSize({ animate: false });
+
+    // Grab latest position
+    const pos = locationService.currentPosition || await locationService.getCurrentLocation();
+    this.currentCoords = pos;
+
+    const latLng = [pos.latitude, pos.longitude];
+
+    if (this.userMarker) {
+      this.userMarker.setLatLng(latLng);
+      this.userMarker.setTooltipContent(`📍 ${pos.latitude.toFixed(5)}, ${pos.longitude.toFixed(5)}`);
+    }
+    if (this.accuracyCircle) {
+      this.accuracyCircle.setLatLng(latLng);
+      this.accuracyCircle.setRadius(pos.accuracy || 15);
+    }
+
+    this.map.setView(latLng, zoom, { animate: true });
+    this._updateHudUi(pos);
+  }
+
   _bindEvents() {
+    window.addEventListener('resize', () => {
+      if (this.map) this.map.invalidateSize();
+    });
+
     window.addEventListener('safetynet:address-updated', (e) => {
       const addrEl = this.container.querySelector('#map-address-text');
       if (addrEl) addrEl.innerText = e.detail.address;
@@ -461,6 +517,7 @@ export class MapComponent {
             b.className = 'px-3 py-1.5 rounded-xl transition text-slate-600 dark:text-slate-400';
           });
           btn.className = 'px-3 py-1.5 rounded-xl transition bg-cyan-600 text-white shadow-md font-bold';
+          setTimeout(() => this.map?.invalidateSize(), 50);
         });
       }
     };
@@ -476,28 +533,33 @@ export class MapComponent {
     const zoomOutBtn = this.container.querySelector('#btn-zoom-out');
     if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => this.map?.zoomOut());
 
+    // Toggle Auto-Follow & Instant Center
     const toggleFollowBtn = this.container.querySelector('#toggle-autofollow-btn');
     if (toggleFollowBtn) {
-      toggleFollowBtn.addEventListener('click', () => {
+      toggleFollowBtn.addEventListener('click', async () => {
         this.autoFollow = !this.autoFollow;
+        
         if (this.autoFollow) {
-          toggleFollowBtn.className = 'w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-600 text-white shadow-cyan-500/40 ring-2 ring-cyan-400 border border-white/20 shadow-2xl flex items-center justify-center transition active:scale-90 text-lg';
-          if (this.map && this.currentCoords) {
-            this.map.panTo([this.currentCoords.latitude, this.currentCoords.longitude], { animate: true });
-          }
+          toggleFollowBtn.className = 'w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-600 text-white shadow-cyan-500/50 ring-2 ring-cyan-300 border border-white/20 shadow-2xl flex items-center justify-center transition active:scale-90 text-lg';
+          await this.centerOnUserLocation(16);
+          this._showCenterToast('🎯 Auto-Follow Locked to Location');
         } else {
           toggleFollowBtn.className = 'w-12 h-12 rounded-2xl bg-slate-900/90 text-slate-400 border border-white/20 shadow-2xl flex items-center justify-center transition active:scale-90 text-lg';
+          this._showCenterToast('Free Pan Mode Enabled');
         }
       });
     }
 
+    // Recenter Button
     const recenterBtn = this.container.querySelector('#recenter-map-btn');
     if (recenterBtn) {
       recenterBtn.addEventListener('click', async () => {
-        const pos = await locationService.getCurrentLocation();
-        if (this.map) {
-          this.map.flyTo([pos.latitude, pos.longitude], 17, { duration: 1.2 });
+        this.autoFollow = true;
+        if (toggleFollowBtn) {
+          toggleFollowBtn.className = 'w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-600 text-white shadow-cyan-500/50 ring-2 ring-cyan-300 border border-white/20 shadow-2xl flex items-center justify-center transition active:scale-90 text-lg';
         }
+        await this.centerOnUserLocation(17);
+        this._showCenterToast('📍 Centered on Exact GPS Pin');
       });
     }
 
