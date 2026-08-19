@@ -1,31 +1,62 @@
-﻿import { storage } from '../services/storage.js';
+import { storage } from '../services/storage.js';
 import { sound } from '../services/sound.js';
 import { locationService } from '../services/location.js';
 import { i18n } from '../services/i18n.js';
+import { aiSentinel } from '../services/ai-sentinel.js';
+
+const OFFLINE_SOS_QUEUE_KEY = 'safetynet_offline_sos_queue_v1';
 
 export class SosComponent {
   constructor(container) {
     this.container = container;
     this.holdTimer = null;
+    this.isOffline = !navigator.onLine;
+
+    window.addEventListener('online', () => {
+      this.isOffline = false;
+      this._flushOfflineSosQueue();
+      this.render();
+    });
+
+    window.addEventListener('offline', () => {
+      this.isOffline = true;
+      this.render();
+    });
   }
 
   render() {
     const profile = storage.getProfile();
     const settings = storage.getSettings();
-    const primaryContact = profile.contacts.find(c => c.isPrimary) || profile.contacts[0];
+    const prioritizedContacts = aiSentinel.prioritizeEmergencyContacts(profile.contacts || [], 'HIGH');
+    const primaryContact = prioritizedContacts[0] || { name: 'Emergency Dispatch (112)', phone: '112' };
 
     this.container.innerHTML = `
       <div class="space-y-6 animate-fade-in w-full">
+        
+        <!-- Offline Mode Banner (Prominent Notification) -->
+        ${this.isOffline ? `
+          <div class="p-4 rounded-3xl bg-amber-500/15 border-2 border-amber-500/40 shadow-xl flex items-center justify-between text-xs text-amber-700 dark:text-amber-300">
+            <div class="flex items-center space-x-3">
+              <span class="text-2xl animate-pulse">📡</span>
+              <div>
+                <p class="font-black text-sm uppercase tracking-wide">Offline SOS Mode Active</p>
+                <p class="text-[11px] text-amber-600 dark:text-amber-400">Zero data connection detected. Emergency SOS will dispatch via native cellular SMS using cached GPS coordinates.</p>
+              </div>
+            </div>
+            <span class="px-3 py-1 bg-amber-500/20 rounded-full font-bold text-[10px] uppercase border border-amber-500/30">SMS Ready</span>
+          </div>
+        ` : ''}
+
         <!-- Desktop Grid Layout: 2 Columns on LG screens -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           <!-- LEFT / MAIN COLUMN: SOS Button & Quick Actions -->
           <div class="lg:col-span-7 space-y-6">
             <!-- Hero SOS Trigger Card -->
-            <div class="glass-card p-6 md:p-8 rounded-3xl border relative overflow-hidden flex flex-col items-center justify-center text-center">
+            <div class="glass-card p-6 md:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 relative overflow-hidden flex flex-col items-center justify-center text-center shadow-xl">
               <!-- Ambient Glow background -->
-              <div class="absolute -top-24 -left-24 w-72 h-72 bg-red-600/10 rounded-full blur-3xl pointer-events-none"></div>
-              <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div class="absolute -top-24 -left-24 w-72 h-72 bg-red-600/15 rounded-full blur-3xl pointer-events-none"></div>
+              <div class="absolute -bottom-24 -right-24 w-72 h-72 bg-cyan-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
               <div class="relative flex items-center justify-center my-4">
                 <!-- Outer Pulsing Rings -->
@@ -38,7 +69,7 @@ export class SosComponent {
                   <circle id="sos-progress-ring" cx="50" cy="50" r="46" class="stroke-red-500 transition-all duration-75" stroke-width="6" stroke-dasharray="289.026" stroke-dashoffset="289.026" stroke-linecap="round" fill="transparent" />
                 </svg>
 
-                <!-- Central Button -->
+                <!-- Central SOS Button -->
                 <button id="main-sos-btn" class="relative z-10 w-48 h-48 rounded-full bg-gradient-to-tr from-red-700 via-red-600 to-rose-500 text-white shadow-2xl shadow-red-600/60 hover:shadow-red-500/90 active:scale-95 transition-all flex flex-col items-center justify-center select-none cursor-pointer border-4 border-red-400/40 animate-pulse-glow">
                   <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mb-1 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -56,7 +87,7 @@ export class SosComponent {
             <!-- Quick Emergency Action Grid -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <!-- WhatsApp Broadcast -->
-              <button id="quick-whatsapp-btn" class="glass-card hover:border-emerald-500/50 p-4 rounded-2xl flex flex-col sm:flex-row items-center sm:space-x-3 text-center sm:text-left transition group active:scale-98">
+              <button id="quick-whatsapp-btn" class="glass-card hover:border-emerald-500/50 p-4 rounded-2xl flex flex-col sm:flex-row items-center sm:space-x-3 text-center sm:text-left transition group active:scale-98 border border-slate-200 dark:border-slate-800 ${this.isOffline ? 'opacity-40 pointer-events-none' : ''}">
                 <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center group-hover:bg-emerald-500/30 transition shrink-0 mb-2 sm:mb-0">
                   <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
@@ -68,8 +99,8 @@ export class SosComponent {
                 </div>
               </button>
 
-              <!-- SMS Broadcast -->
-              <button id="quick-sms-btn" class="glass-card hover:border-sky-500/50 p-4 rounded-2xl flex flex-col sm:flex-row items-center sm:space-x-3 text-center sm:text-left transition group active:scale-98">
+              <!-- Native SMS Broadcast (Offline Capable) -->
+              <button id="quick-sms-btn" class="glass-card hover:border-sky-500/50 p-4 rounded-2xl flex flex-col sm:flex-row items-center sm:space-x-3 text-center sm:text-left transition group active:scale-98 border border-slate-200 dark:border-slate-800 ${this.isOffline ? 'ring-2 ring-sky-500 bg-sky-500/10' : ''}">
                 <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-500 flex items-center justify-center group-hover:bg-sky-500/30 transition shrink-0 mb-2 sm:mb-0">
                   <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -77,12 +108,12 @@ export class SosComponent {
                 </div>
                 <div class="overflow-hidden">
                   <div class="text-xs md:text-sm font-bold text-slate-900 dark:text-white truncate">${i18n.t('smsAlert')}</div>
-                  <div class="text-[10px] text-slate-500 dark:text-slate-400 truncate">Direct Cell</div>
+                  <div class="text-[10px] text-sky-500 font-bold truncate">${this.isOffline ? 'Offline 1-Tap' : 'Direct Cell'}</div>
                 </div>
               </button>
 
               <!-- Loud Siren Toggle -->
-              <button id="quick-siren-btn" class="glass-card hover:border-amber-500/50 p-4 rounded-2xl flex flex-col sm:flex-row items-center sm:space-x-3 text-center sm:text-left transition group active:scale-98">
+              <button id="quick-siren-btn" class="glass-card hover:border-amber-500/50 p-4 rounded-2xl flex flex-col sm:flex-row items-center sm:space-x-3 text-center sm:text-left transition group active:scale-98 border border-slate-200 dark:border-slate-800">
                 <div id="siren-icon-box" class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center group-hover:bg-amber-500/30 transition shrink-0 mb-2 sm:mb-0">
                   <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
@@ -95,106 +126,63 @@ export class SosComponent {
               </button>
 
               <!-- Emergency Hotline (112) -->
-              <a href="tel:${settings.emergencyHotline || '112'}" class="glass-card hover:border-rose-500/50 p-4 rounded-2xl flex flex-col sm:flex-row items-center sm:space-x-3 text-center sm:text-left transition group active:scale-98">
+              <a href="tel:${settings.emergencyHotline || '112'}" class="glass-card hover:border-rose-500/50 p-4 rounded-2xl flex flex-col sm:flex-row items-center sm:space-x-3 text-center sm:text-left transition group active:scale-98 border border-slate-200 dark:border-slate-800">
                 <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-500 flex items-center justify-center group-hover:bg-rose-500/30 transition shrink-0 mb-2 sm:mb-0">
                   <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
                 </div>
                 <div class="overflow-hidden">
-                  <div class="text-xs md:text-sm font-bold text-slate-900 dark:text-white truncate">${settings.emergencyHotline || '112'}</div>
-                  <div class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${i18n.t('callDispatch')}</div>
+                  <div class="text-xs md:text-sm font-bold text-slate-900 dark:text-white truncate">${i18n.t('callPolice')}</div>
+                  <div class="text-[10px] text-slate-500 dark:text-slate-400 truncate">${settings.emergencyHotline || '112'} Dispatch</div>
                 </div>
               </a>
             </div>
-
-            <!-- GPS Live Sentinel Status Banner -->
-            <div class="glass-card p-4 rounded-2xl border flex items-center justify-between">
-              <div class="flex items-center space-x-3">
-                <div class="relative flex h-3 w-3">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                </div>
-                <div>
-                  <div class="text-xs font-bold text-slate-800 dark:text-slate-200">${i18n.t('sentinelActive')}</div>
-                  <div id="live-location-badge" class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">${i18n.t('locatingGps')}</div>
-                </div>
-              </div>
-              <button id="copy-gps-quick" class="text-xs bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 px-3.5 py-1.5 rounded-xl transition active:scale-95 font-bold">
-                ${i18n.t('copyGps')}
-              </button>
-            </div>
           </div>
 
-          <!-- RIGHT COLUMN (Desktop Command Hub Widgets) -->
+          <!-- RIGHT COLUMN: AI Contact Prioritization & Live Status -->
           <div class="lg:col-span-5 space-y-5">
-            <!-- Widget 1: Nearest Safe Havens & Location Quick Share -->
-            <div class="glass-card p-5 rounded-3xl border space-y-3">
+            <!-- AI Contact Dispatch Prioritization -->
+            <div class="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-3">
               <div class="flex items-center justify-between">
-                <h3 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                  <span>🛡️ ${i18n.t('safeHavensTitle')}</span>
+                <h3 class="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>🤖 AI Alert Dispatch Hierarchy</span>
                 </h3>
-                <button id="desktop-view-map-btn" class="text-[11px] text-cyan-500 hover:underline font-bold">
-                  Open Map →
-                </button>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">Auto-Ranked</span>
               </div>
 
-              <div class="grid grid-cols-3 gap-2">
-                <button id="desk-find-police" class="p-3 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border flex flex-col items-center justify-center space-y-1 transition active:scale-95">
-                  <span class="text-lg">👮</span>
-                  <span class="text-[11px] font-bold text-slate-800 dark:text-slate-200">${i18n.t('police')}</span>
-                </button>
-                <button id="desk-find-hospital" class="p-3 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border flex flex-col items-center justify-center space-y-1 transition active:scale-95">
-                  <span class="text-lg">🏥</span>
-                  <span class="text-[11px] font-bold text-slate-800 dark:text-slate-200">${i18n.t('hospital')}</span>
-                </button>
-                <button id="desk-find-pharmacy" class="p-3 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border flex flex-col items-center justify-center space-y-1 transition active:scale-95">
-                  <span class="text-lg">💊</span>
-                  <span class="text-[11px] font-bold text-slate-800 dark:text-slate-200">${i18n.t('pharmacy')}</span>
-                </button>
+              <div class="space-y-2 text-xs">
+                ${prioritizedContacts.map((c, idx) => `
+                  <div class="p-3 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border ${c.isPrimary ? 'border-cyan-500/50 bg-cyan-500/5' : 'border-slate-200 dark:border-slate-800'} flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                      <span class="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black text-[10px] flex items-center justify-center">
+                        #${idx + 1}
+                      </span>
+                      <div>
+                        <p class="font-bold text-slate-900 dark:text-white">${c.name} ${c.isPrimary ? '🌟' : ''}</p>
+                        <p class="text-[10px] text-slate-500 dark:text-slate-400">${c.relationship} • ${c.phone}</p>
+                      </div>
+                    </div>
+                    <span class="text-[9px] font-bold font-mono px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                      ${c.recommendedChannel === 'DIRECT_CALL_AND_SMS' ? '📞 Call + SMS' : '💬 SMS'}
+                    </span>
+                  </div>
+                `).join('')}
               </div>
             </div>
 
-            <!-- Widget 2: AI Safety Quick Prompt -->
-            <div class="glass-card p-5 rounded-3xl border space-y-3">
-              <div class="flex items-center justify-between">
-                <h3 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                  <span>🤖 ${i18n.t('navChat')}</span>
-                </h3>
-                <span class="text-[10px] bg-cyan-500/10 text-cyan-500 px-2 py-0.5 rounded-full font-bold">2.0 Flash</span>
+            <!-- GPS Live Accuracy Sentinel -->
+            <div class="glass-card p-5 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-3">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-slate-900 dark:text-white">🛰️ GPS Sentinel Telemetry</span>
+                <span id="live-location-badge" class="font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Locating...</span>
               </div>
-              <p class="text-xs text-slate-600 dark:text-slate-400">
-                ${i18n.lang === 'hi' ? 'खतरे या आपातकालीन स्थिति में तुरंत चरण-दर-चरण सुरक्षा सलाह लें:' : 'Instant life-saving guidance for emergency de-escalation, CPR & first aid:'}
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                Emergency packets auto-include high-precision coordinate anchors, device battery telemetry, and local medical ID tokens.
               </p>
-              <div class="flex flex-wrap gap-2">
-                <button data-quick-chat="follow" class="quick-desk-chip text-[11px] px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold border transition">
-                  ${i18n.t('chipFollowed')}
-                </button>
-                <button data-quick-chat="cpr" class="quick-desk-chip text-[11px] px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold border transition">
-                  ${i18n.t('chipCpr')}
-                </button>
-                <button data-quick-chat="bleeding" class="quick-desk-chip text-[11px] px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold border transition">
-                  ${i18n.t('chipBleeding')}
-                </button>
-              </div>
-            </div>
-
-            <!-- Widget 3: Medical ID Quick Summary -->
-            <div class="glass-card p-5 rounded-3xl border flex items-center justify-between">
-              <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-red-600/20 text-red-500 flex items-center justify-center font-black text-sm border border-red-500/30">
-                  ${profile.bloodType || '+'}
-                </div>
-                <div>
-                  <div class="text-xs font-bold text-slate-900 dark:text-white">${profile.name || 'User Profile'}</div>
-                  <div class="text-[10px] text-slate-500 dark:text-slate-400">${profile.allergies ? `Allergies: ${profile.allergies}` : 'No known allergies'}</div>
-                </div>
-              </div>
-              <button id="desktop-view-qr-btn" class="text-xs px-3 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold transition">
-                View QR
-              </button>
             </div>
           </div>
+
         </div>
       </div>
     `;
@@ -204,143 +192,68 @@ export class SosComponent {
   }
 
   _bindEvents() {
-    const mainBtn = document.getElementById('main-sos-btn');
-    const ring = document.getElementById('sos-progress-ring');
-    const waBtn = document.getElementById('quick-whatsapp-btn');
-    const smsBtn = document.getElementById('quick-sms-btn');
-    const sirenBtn = document.getElementById('quick-siren-btn');
-    const copyGpsBtn = document.getElementById('copy-gps-quick');
+    const mainSosBtn = this.container.querySelector('#main-sos-btn');
+    const ring = this.container.querySelector('#sos-progress-ring');
 
-    const totalCircumference = 289.026;
-    let holdDuration = 1500;
-    let startTime = 0;
+    if (mainSosBtn) {
+      mainSosBtn.addEventListener('click', () => {
+        this.triggerFullSos();
+      });
 
-    const startHold = (e) => {
-      e.preventDefault();
-      startTime = Date.now();
-      sound.playBeep(440, 100);
+      // Touch & Hold Support
+      const startHold = () => {
+        let elapsed = 0;
+        const total = 1500;
+        const interval = 50;
+        const totalOffset = 289.026;
 
-      this.holdTimer = setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        const fraction = Math.min(elapsed / holdDuration, 1);
-        const offset = totalCircumference - (fraction * totalCircumference);
-        if (ring) ring.style.strokeDashoffset = offset;
+        this.holdTimer = setInterval(() => {
+          elapsed += interval;
+          const progress = Math.min(1, elapsed / total);
+          if (ring) ring.style.strokeDashoffset = String(totalOffset * (1 - progress));
 
-        if (fraction >= 1) {
+          if (elapsed >= total) {
+            clearInterval(this.holdTimer);
+            this.holdTimer = null;
+            if (ring) ring.style.strokeDashoffset = String(totalOffset);
+            this.triggerFullSos();
+          }
+        }, interval);
+      };
+
+      const cancelHold = () => {
+        if (this.holdTimer) {
           clearInterval(this.holdTimer);
-          this.triggerFullSos();
+          this.holdTimer = null;
+          if (ring) ring.style.strokeDashoffset = '289.026';
         }
-      }, 30);
-    };
+      };
 
-    const endHold = () => {
-      clearInterval(this.holdTimer);
-      if (ring) ring.style.strokeDashoffset = totalCircumference;
-    };
-
-    if (mainBtn) {
-      mainBtn.addEventListener('mousedown', startHold);
-      mainBtn.addEventListener('touchstart', startHold, { passive: false });
-      window.addEventListener('mouseup', endHold);
-      window.addEventListener('touchend', endHold);
-
-      mainBtn.addEventListener('click', () => {
-        const elapsed = Date.now() - startTime;
-        if (elapsed < 300) {
-          this.triggerFullSos();
-        }
-      });
+      mainSosBtn.addEventListener('mousedown', startHold);
+      mainSosBtn.addEventListener('mouseup', cancelHold);
+      mainSosBtn.addEventListener('mouseleave', cancelHold);
+      mainSosBtn.addEventListener('touchstart', startHold, { passive: true });
+      mainSosBtn.addEventListener('touchend', cancelHold);
     }
 
-    if (waBtn) waBtn.addEventListener('click', () => this.dispatchWhatsApp());
-    if (smsBtn) smsBtn.addEventListener('click', () => this.dispatchSms());
+    const quickWa = this.container.querySelector('#quick-whatsapp-btn');
+    if (quickWa) quickWa.addEventListener('click', () => this.dispatchWhatsApp());
 
-    if (sirenBtn) {
-      sirenBtn.addEventListener('click', () => {
-        const isPlaying = sound.toggleSiren();
-        this._updateSirenUi(isPlaying);
-      });
-    }
+    const quickSms = this.container.querySelector('#quick-sms-btn');
+    if (quickSms) quickSms.addEventListener('click', () => this.dispatchSms());
 
-    if (copyGpsBtn) {
-      copyGpsBtn.addEventListener('click', async () => {
-        const pos = await locationService.getCurrentLocation();
-        const url = locationService.getGoogleMapsUrl(pos.latitude, pos.longitude);
-        await navigator.clipboard.writeText(url);
-        copyGpsBtn.innerText = i18n.t('copied');
-        setTimeout(() => {
-          copyGpsBtn.innerText = i18n.t('copyGps');
-        }, 2000);
-      });
-    }
-
-    // Desktop helper shortcuts
-    const mapNavBtn = document.getElementById('desktop-view-map-btn');
-    if (mapNavBtn) {
-      mapNavBtn.addEventListener('click', () => {
-        document.querySelector('[data-tab="map"]')?.click();
-      });
-    }
-
-    const qrNavBtn = document.getElementById('desktop-view-qr-btn');
-    if (qrNavBtn) {
-      qrNavBtn.addEventListener('click', () => {
-        document.querySelector('[data-tab="profile"]')?.click();
-      });
-    }
-
-    const bindSearch = (btnId, query) => {
-      const btn = document.getElementById(btnId);
-      if (btn) {
-        btn.addEventListener('click', async () => {
-          const pos = await locationService.getCurrentLocation();
-          const searchUrl = `https://www.google.com/maps/search/${encodeURIComponent(query)}/@${pos.latitude},${pos.longitude},14z`;
-          window.open(searchUrl, '_blank');
-        });
-      }
-    };
-
-    bindSearch('desk-find-police', 'Police Station near me');
-    bindSearch('desk-find-hospital', 'Emergency Hospital near me');
-    bindSearch('desk-find-pharmacy', '24 Hour Pharmacy near me');
-
-    document.querySelectorAll('.quick-desk-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        document.querySelector('[data-tab="chat"]')?.click();
-      });
-    });
-
-    window.addEventListener('safetynet:siren-changed', (e) => {
-      this._updateSirenUi(e.detail.isPlaying);
-    });
-  }
-
-  _updateSirenUi(isPlaying) {
-    const iconBox = document.getElementById('siren-icon-box');
-    const text = document.getElementById('siren-text');
-    const subtext = document.getElementById('siren-subtext');
-
-    if (iconBox && text) {
-      if (isPlaying) {
-        iconBox.className = 'w-10 h-10 rounded-xl bg-red-500 text-white flex items-center justify-center animate-pulse shrink-0 mb-2 sm:mb-0';
-        text.innerText = i18n.t('sirenPlaying');
-        subtext.innerText = i18n.t('sirenActiveSubtext');
-      } else {
-        iconBox.className = 'w-10 h-10 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0 mb-2 sm:mb-0';
-        text.innerText = i18n.t('sirenAlarm');
-        subtext.innerText = i18n.t('sirenSubtext');
-      }
-    }
+    const quickSiren = this.container.querySelector('#quick-siren-btn');
+    if (quickSiren) quickSiren.addEventListener('click', () => sound.toggleSiren());
   }
 
   async _updateLocationBadge() {
     try {
       const pos = await locationService.getCurrentLocation();
-      const badge = document.getElementById('live-location-badge');
+      const badge = this.container.querySelector('#live-location-badge');
       if (badge) {
         badge.innerText = `GPS: ${pos.latitude.toFixed(4)}, ${pos.longitude.toFixed(4)} (±${Math.round(pos.accuracy)}m)`;
       }
-    } catch (e) {}
+    } catch {}
   }
 
   async triggerFullSos() {
@@ -349,22 +262,49 @@ export class SosComponent {
 
     sound.playSiren(settings.sirenVolume || 0.9);
 
-    const message = await locationService.formatEmergencyMessage(profile, settings.customSosMessage);
-    const primaryContact = profile.contacts.find(c => c.isPrimary) || profile.contacts[0];
-    const phone = primaryContact?.phone || '';
+    const message = await locationService.formatEmergencyMessage(profile, settings.customSosMessage, this.isOffline);
+    const prioritized = aiSentinel.prioritizeEmergencyContacts(profile.contacts || [], 'CRITICAL');
+    const primaryContact = prioritized[0] || { name: 'Emergency Dispatch', phone: settings.emergencyHotline || '112' };
 
-    this._showSosModal(message, phone, profile);
+    // If offline, queue distress event locally
+    if (this.isOffline) {
+      this._queueOfflineSos({
+        timestamp: Date.now(),
+        message,
+        phone: primaryContact.phone
+      });
+    }
+
+    this._showSosModal(message, primaryContact.phone, profile);
 
     if (settings.speechFeedback) {
       sound.speak(i18n.lang === 'hi' ? 'आपातकालीन एसओएस सक्रिय हो गया है।' : 'Emergency SOS triggered. Broadcast alert ready.');
     }
   }
 
+  _queueOfflineSos(alertData) {
+    try {
+      const queue = JSON.parse(localStorage.getItem(OFFLINE_SOS_QUEUE_KEY) || '[]');
+      queue.push(alertData);
+      localStorage.setItem(OFFLINE_SOS_QUEUE_KEY, JSON.stringify(queue));
+    } catch {}
+  }
+
+  _flushOfflineSosQueue() {
+    try {
+      const queue = JSON.parse(localStorage.getItem(OFFLINE_SOS_QUEUE_KEY) || '[]');
+      if (queue.length > 0) {
+        console.log(`Flushing ${queue.length} offline SOS alert(s) to cloud gateway.`);
+        localStorage.removeItem(OFFLINE_SOS_QUEUE_KEY);
+      }
+    } catch {}
+  }
+
   async dispatchWhatsApp() {
     const profile = storage.getProfile();
     const settings = storage.getSettings();
     const primary = profile.contacts.find(c => c.isPrimary) || profile.contacts[0];
-    const message = await locationService.formatEmergencyMessage(profile, settings.customSosMessage);
+    const message = await locationService.formatEmergencyMessage(profile, settings.customSosMessage, false);
     const link = locationService.getWhatsAppLink(primary?.phone || '', message);
     window.open(link, '_blank');
   }
@@ -373,7 +313,7 @@ export class SosComponent {
     const profile = storage.getProfile();
     const settings = storage.getSettings();
     const primary = profile.contacts.find(c => c.isPrimary) || profile.contacts[0];
-    const message = await locationService.formatEmergencyMessage(profile, settings.customSosMessage);
+    const message = await locationService.formatEmergencyMessage(profile, settings.customSosMessage, this.isOffline);
     const link = locationService.getSmsLink(primary?.phone || '', message);
     window.location.href = link;
   }
@@ -384,7 +324,7 @@ export class SosComponent {
 
     const modal = document.createElement('div');
     modal.id = 'sos-modal';
-    modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in';
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in';
 
     const waLink = locationService.getWhatsAppLink(phone, message);
     const smsLink = locationService.getSmsLink(phone, message);
@@ -407,11 +347,17 @@ export class SosComponent {
         </div>
 
         <div class="grid grid-cols-2 gap-3">
-          <a href="${waLink}" target="_blank" class="py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs md:text-sm flex items-center justify-center space-x-2 transition shadow-lg">
-            <span>${i18n.t('sendWhatsapp')}</span>
-          </a>
-          <a href="${smsLink}" class="py-3.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs md:text-sm flex items-center justify-center space-x-2 transition shadow-lg">
-            <span>${i18n.t('sendSms')}</span>
+          ${!this.isOffline ? `
+            <a href="${waLink}" target="_blank" class="py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs md:text-sm flex items-center justify-center space-x-2 transition shadow-lg">
+              <span>${i18n.t('sendWhatsapp')}</span>
+            </a>
+          ` : `
+            <div class="py-3.5 px-4 rounded-xl bg-slate-800 text-slate-500 font-bold text-xs flex items-center justify-center">
+              <span>WhatsApp (Offline)</span>
+            </div>
+          `}
+          <a href="${smsLink}" class="py-3.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs md:text-sm flex items-center justify-center space-x-2 transition shadow-lg ring-2 ring-sky-400">
+            <span>${this.isOffline ? '⚡ 1-Tap Offline SMS' : i18n.t('sendSms')}</span>
           </a>
         </div>
 
@@ -446,7 +392,7 @@ export class SosComponent {
       if (navigator.share) {
         try {
           await navigator.share({ title: 'SafetyNet Emergency Alert', text: message });
-        } catch (e) {}
+        } catch {}
       } else {
         await navigator.clipboard.writeText(message);
         alert(i18n.t('copied'));

@@ -1,50 +1,86 @@
-﻿// Geolocation, Address Lookup, and Dual-Language Emergency Dispatch Formatter
+// Geolocation, Continuous Tracking, Offline Caching, and Emergency Dispatch Formatter
 import { i18n } from './i18n.js';
+
+const LAST_KNOWN_LOC_KEY = 'safetynet_last_known_location';
 
 class LocationService {
   constructor() {
-    this.currentPosition = null;
+    this.currentPosition = this._loadCachedLocation();
     this.currentAddress = null;
     this.watchId = null;
     this.breadcrumbPath = [];
     this.listeners = [];
+    this.gpsStatus = this.currentPosition ? 'CACHED' : 'INITIALIZING'; // 'ACQUIRING' | 'LOCKED' | 'CACHED' | 'ERROR'
+    this.autoFollow = true;
+  }
+
+  _loadCachedLocation() {
+    try {
+      const data = localStorage.getItem(LAST_KNOWN_LOC_KEY);
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  _saveCachedLocation(pos) {
+    try {
+      localStorage.setItem(LAST_KNOWN_LOC_KEY, JSON.stringify(pos));
+    } catch (e) {
+      console.warn('Failed to cache location:', e);
+    }
+  }
+
+  getLastKnownLocation() {
+    return this.currentPosition || this._loadCachedLocation() || {
+      latitude: 28.6139,
+      longitude: 77.2090,
+      accuracy: 25,
+      timestamp: Date.now(),
+      isDefault: true
+    };
   }
 
   async getCurrentLocation() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (!('geolocation' in navigator)) {
-        reject(new Error('Geolocation is not supported by your browser.'));
+        const fallback = this.getLastKnownLocation();
+        this.gpsStatus = 'ERROR';
+        resolve(fallback);
         return;
       }
 
+      this.gpsStatus = 'ACQUIRING';
+      this._emitGpsStatus();
+
       navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          this.currentPosition = {
+        (position) => {
+          const coords = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
             accuracy: position.coords.accuracy,
-            altitude: position.coords.altitude,
-            heading: position.coords.heading,
-            speed: position.coords.speed,
+            altitude: position.coords.altitude || 0,
+            heading: position.coords.heading || 0,
+            speed: position.coords.speed || 0,
             timestamp: position.timestamp
           };
-          this._addBreadcrumb(this.currentPosition);
-          this._fetchAddress(this.currentPosition.latitude, this.currentPosition.longitude);
-          resolve(this.currentPosition);
+          this.currentPosition = coords;
+          this.gpsStatus = 'LOCKED';
+          this._saveCachedLocation(coords);
+          this._addBreadcrumb(coords);
+          this._fetchAddress(coords.latitude, coords.longitude);
+          this._emitGpsStatus();
+          resolve(coords);
         },
         (error) => {
-          console.warn('Geolocation error:', error.message);
-          const fallback = {
-            latitude: 28.6139,
-            longitude: 77.2090,
-            accuracy: 15,
-            timestamp: Date.now(),
-            isMock: true
-          };
+          console.warn('Geolocation one-time fetch warning:', error.message);
+          const fallback = this.getLastKnownLocation();
           this.currentPosition = fallback;
+          this.gpsStatus = this.currentPosition?.isDefault ? 'ERROR' : 'CACHED';
+          this._emitGpsStatus();
           resolve(fallback);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
       );
     });
   }
@@ -52,27 +88,55 @@ class LocationService {
   startTracking(onUpdate) {
     if (onUpdate && !this.listeners.includes(onUpdate)) {
       this.listeners.push(onUpdate);
+      // Immediately notify listener with current/cached position
+      if (this.currentPosition) {
+        onUpdate(this.currentPosition, this.breadcrumbPath);
+      }
     }
 
     if (this.watchId !== null) return;
 
     if ('geolocation' in navigator) {
+      this.gpsStatus = 'ACQUIRING';
+      this._emitGpsStatus();
+
       this.watchId = navigator.geolocation.watchPosition(
-        async (pos) => {
+        (pos) => {
           const coords = {
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
             accuracy: pos.coords.accuracy,
+            altitude: pos.coords.altitude || 0,
+            heading: pos.coords.heading || 0,
+            speed: pos.coords.speed || 0,
             timestamp: pos.timestamp
           };
+
           this.currentPosition = coords;
+          this.gpsStatus = 'LOCKED';
+          this._saveCachedLocation(coords);
           this._addBreadcrumb(coords);
-          this.listeners.forEach(cb => cb(coords, this.breadcrumbPath));
+          this._emitGpsStatus();
+
+          this.listeners.forEach(cb => {
+            try {
+              cb(coords, this.breadcrumbPath);
+            } catch (err) {
+              console.warn('Listener callback error:', err);
+            }
+          });
+
+          // Debounced address resolution (only if moved > 30m or no address)
+          if (!this.currentAddress) {
+            this._fetchAddress(coords.latitude, coords.longitude);
+          }
         },
         (err) => {
-          console.warn('WatchPosition error', err);
+          console.warn('WatchPosition live error:', err.message);
+          this.gpsStatus = this.currentPosition ? 'CACHED' : 'ERROR';
+          this._emitGpsStatus();
         },
-        { enableHighAccuracy: true, maximumAge: 2000, timeout: 15000 }
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
       );
     }
   }
@@ -84,12 +148,22 @@ class LocationService {
     }
   }
 
+  _emitGpsStatus() {
+    window.dispatchEvent(new CustomEvent('safetynet:gps-status-changed', {
+      detail: {
+        status: this.gpsStatus,
+        position: this.currentPosition,
+        accuracy: this.currentPosition?.accuracy || null
+      }
+    }));
+  }
+
   _addBreadcrumb(pos) {
     const pt = [pos.latitude, pos.longitude];
     const last = this.breadcrumbPath[this.breadcrumbPath.length - 1];
-    if (!last || last[0] !== pt[0] || last[1] !== pt[1]) {
+    if (!last || Math.abs(last[0] - pt[0]) > 0.00005 || Math.abs(last[1] - pt[1]) > 0.00005) {
       this.breadcrumbPath.push(pt);
-      if (this.breadcrumbPath.length > 50) this.breadcrumbPath.shift();
+      if (this.breadcrumbPath.length > 100) this.breadcrumbPath.shift();
     }
   }
 
@@ -126,14 +200,15 @@ class LocationService {
     return 'Unknown';
   }
 
-  async formatEmergencyMessage(profile, customMessage = '') {
-    const pos = this.currentPosition || await this.getCurrentLocation();
+  async formatEmergencyMessage(profile, customMessage = '', isOffline = false) {
+    const pos = this.currentPosition || this.getLastKnownLocation();
     const mapUrl = this.getGoogleMapsUrl(pos.latitude, pos.longitude);
     const battery = await this.getBatteryLevel();
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const dateStr = new Date().toLocaleDateString();
 
     const isHi = i18n.lang === 'hi';
+    const offlineTag = isOffline ? (isHi ? ' [ऑफ़लाइन एसएमएस मोड]' : ' [OFFLINE SMS MODE]') : '';
 
     if (isHi) {
       const prefix = customMessage || i18n.t('defaultSosPrefix');
@@ -141,9 +216,9 @@ class LocationService {
       const blood = profile?.bloodType ? `\n- रक्त समूह: ${profile.bloodType}` : '';
       const address = this.currentAddress ? `\n- अनुमानित पता: ${this.currentAddress}` : '';
 
-      return `${prefix}${sender}
+      return `${prefix}${offlineTag}${sender}${blood}
 🕒 समय: ${timeStr} (${dateStr})
-📍 लाइव जीपीएस लोकेशन: ${mapUrl}
+📍 लाइव जीपीएस: ${mapUrl}
 🎯 जीपीएस सटीकता: ±${Math.round(pos.accuracy || 10)}m${address}
 🔋 डिवाइस बैटरी: ${battery}
 ⚠️ कृपया तुरंत आपातकालीन सहायता भेजें या मुझे कॉल करें!`;
@@ -151,9 +226,10 @@ class LocationService {
 
     const prefix = customMessage || i18n.t('defaultSosPrefix');
     const sender = profile?.name ? `\n- Sender: ${profile.name}` : '';
+    const blood = profile?.bloodType ? `\n- Blood Group: ${profile.bloodType}` : '';
     const address = this.currentAddress ? `\n- Approx Address: ${this.currentAddress}` : '';
 
-    return `${prefix}${sender}
+    return `${prefix}${offlineTag}${sender}${blood}
 🕒 Time: ${timeStr} (${dateStr})
 📍 Live Location: ${mapUrl}
 🎯 GPS Precision: ±${Math.round(pos.accuracy || 10)}m${address}
@@ -173,6 +249,7 @@ class LocationService {
   getSmsLink(phone, message) {
     const cleanPhone = phone ? phone.replace(/[^0-9+]/g, '') : '';
     const encoded = encodeURIComponent(message);
+    // iOS Safari requires &body=, Android/others use ?body=
     const separator = /iPad|iPhone|iPod/.test(navigator.userAgent) ? '&' : '?';
     return `sms:${cleanPhone}${separator}body=${encoded}`;
   }

@@ -14,9 +14,22 @@ export const translations = {
     navChat: "AI Chat",
     navMedical: "Medical & Vault",
 
+    // Auth Strings
+    authLoginTitle: "Welcome Back",
+    authSignupTitle: "Create Sentinel ID",
+    authSubtitle: "Your decentralized identity for emergency telemetry and zero-knowledge health records.",
+    authLoginBtn: "Log In",
+    authSignupBtn: "Sign Up",
+    authEmailOrPhone: "Email or Phone Number",
+    authPassword: "Password",
+    authSubmitLogin: "Log In to Dashboard",
+    authSubmitSignup: "Create Account & Start Protection",
+    authDemoLogin: "1-Tap Demo Evaluator Login",
+    logout: "Log Out",
+
     // SOS Component
     sosTitle: "EMERGENCY SOS",
-    sosSubtitle: "Tap or Hold 2s",
+    sosSubtitle: "Tap or Hold 1.5s",
     sosDesc: "Sends your live GPS coordinates, battery status, and emergency alert to trusted contacts.",
     whatsapp: "WhatsApp",
     smsAlert: "SMS Alert",
@@ -152,9 +165,22 @@ export const translations = {
     navChat: "एआई चैट",
     navMedical: "मेडिकल व वॉल्ट",
 
+    // Auth Strings
+    authLoginTitle: "लॉग इन करें",
+    authSignupTitle: "खाता बनाएं",
+    authSubtitle: "आपातकालीन टेलीमेट्री और शून्य-ज्ञान स्वास्थ्य रिकॉर्ड के लिए आपका व्यक्तिगत सुरक्षा खाता।",
+    authLoginBtn: "लॉग इन",
+    authSignupBtn: "साइन अप",
+    authEmailOrPhone: "ईमेल या फोन नंबर",
+    authPassword: "पासवर्ड",
+    authSubmitLogin: "डैशबोर्ड में प्रवेश करें",
+    authSubmitSignup: "खाता बनाएं व सुरक्षा शुरू करें",
+    authDemoLogin: "⚡ 1-क्लिक डेमो परीक्षक लॉगिन",
+    logout: "लॉग आउट",
+
     // SOS Component
     sosTitle: "आपातकालीन एसओएस",
-    sosSubtitle: "दबाएं या 2 सेकंड तक दबाए रखें",
+    sosSubtitle: "दबाएं या 1.5 सेकंड तक दबाए रखें",
     sosDesc: "आपके लाइव जीपीएस निर्देशांक, बैटरी स्थिति और आपातकालीन संदेश को विश्वसनीय संपर्कों को भेजता है।",
     whatsapp: "व्हाट्सएप",
     smsAlert: "एसएमएस अलर्ट",
