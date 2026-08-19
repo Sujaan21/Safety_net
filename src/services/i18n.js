@@ -1,4 +1,4 @@
-﻿// SafetyNet Bilingual Internationalization (English & Hindi)
+// SafetyNet Bilingual Internationalization (English & Hindi)
 import { storage } from './storage.js';
 
 export const translations = {
@@ -12,7 +12,7 @@ export const translations = {
     navTimer: "Timer",
     navMap: "Map",
     navChat: "AI Chat",
-    navMedical: "Medical",
+    navMedical: "Medical & Vault",
 
     // SOS Component
     sosTitle: "EMERGENCY SOS",
@@ -58,15 +58,15 @@ export const translations = {
     timerWarningVoice: "Warning! Safety timer expired without check-in. Alerting emergency contacts.",
     timerNotificationTitle: "🚨 SafetyNet Timer Expired!",
     timerNotificationBody: "Check-in was missed. Emergency contacts are being notified.",
-    missedCheckinPrefix: "🚨 MISSED SAFETY CHECK-IN ALERT! I did not check in on my SafetyNet timer. Please call me or send help immediately!",
+    missedCheckinPrefix: "🚨 MISSED SAFETY CHECK-IN ALERT! I failed to check in on my SafetyNet timer. Please call me or send help immediately!",
 
     // Map Component
     liveGpsTracking: "Live GPS Tracking",
     locating: "Locating...",
     accuracySuffix: "accuracy",
     resolvingAddress: "Resolving street address...",
-    recenterMap: "Center on Me",
-    shareLiveLocationBtn: "SHARE LIVE LOCATION LINK",
+    recenterMap: "Recenter on Me",
+    shareLiveLocationBtn: "Share Live Location Link",
     safeHavensTitle: "Nearby Safe Havens",
     police: "Police",
     hospital: "Hospital",
@@ -74,54 +74,71 @@ export const translations = {
     linkCopiedAlert: "Live Google Maps location link copied to clipboard!",
 
     // Chat Component
-    chatWelcomeTitle: "🛡️ SafetyNet AI Assistant",
-    chatWelcomeText: "I am your 24/7 personal safety specialist. I provide immediate step-by-step guidance for emergency situations, first aid, threat de-escalation, and personal protection.\n\nTap any quick prompt below or type your question:",
+    chatWelcomeTitle: "🛡️ SafetyNet AI Safety Companion",
+    chatWelcomeText: "I am your 24/7 personal safety specialist. I provide immediate, step-by-step guidance for emergency situations, first aid, de-escalation, and personal protection.\n\nTap a quick scenario below or ask any emergency question:",
     chipFollowed: "🚶 Being Followed",
-    chipDeescalate: "🛡️ De-escalation",
+    chipDeescalate: "🛡️ De-escalate",
     chipBleeding: "🩸 Severe Bleeding",
     chipCpr: "🫀 CPR Steps",
     chipRideshare: "🚗 Rideshare Safety",
     promptFollowed: "I think someone is following me. What should I do right now?",
-    promptDeescalate: "How do I de-escalate an aggressive stranger?",
-    promptBleeding: "First aid for severe bleeding",
-    promptCpr: "Step by step CPR instructions",
+    promptDeescalate: "How do I safely de-escalate an aggressive stranger?",
+    promptBleeding: "First aid protocol for severe bleeding",
+    promptCpr: "Step-by-step Hands-Only CPR instructions",
     promptRideshare: "Rideshare and taxi safety checklist",
-    chatPlaceholder: "Ask safety emergency questions...",
-    analyzingSafety: "Analyzing safety response...",
+    chatPlaceholder: "Ask any emergency or safety question...",
+    analyzingSafety: "Formulating emergency response...",
     speakBtn: "🔊 Speak",
     copyBtn: "📋 Copy",
     sourceGemini: "Gemini 2.0 Flash",
-    sourceOffline: "Built-in Safety Knowledge",
+    sourceOffline: "Offline Safety Engine",
 
     // Profile & Medical Component
-    tabMedicalCard: "📋 Emergency Medical Card",
-    tabSettings: "⚙️ Contacts & Settings",
+    tabMedicalCard: "📋 Emergency Medical ID",
+    tabSettings: "⚙️ Contacts & Vault",
     medicalIdTitle: "Emergency Medical ID",
-    firstResponderAccess: "FIRST RESPONDER ACCESS",
+    firstResponderAccess: "First Responder View",
     fullName: "Full Name",
-    primaryContact: "Primary Contact",
+    primaryContact: "Primary Emergency Contact",
     knownAllergies: "Known Allergies",
-    medications: "Medications",
-    criticalNotes: "Critical Notes",
-    scanQrTitle: "Scan for Full Medical & Contact Profile",
-    scanQrSub: "Accessible offline without unlocking device",
-    personalMedicalDetails: "🩺 Personal Medical Details",
+    medications: "Current Medications",
+    criticalNotes: "Critical Medical Notes",
+    scanQrTitle: "Scan for Complete Emergency & Medical Profile",
+    scanQrSub: "Accessible offline by paramedics & first responders",
+    personalMedicalDetails: "🩺 Medical Details",
     bloodGroup: "Blood Group",
-    emergencyHotline: "Emergency Hotline",
+    emergencyHotline: "Emergency Dispatch Number",
     emergencyContactsTitle: "📞 Emergency Contacts",
     addContact: "+ Add Contact",
-    primaryTag: "Primary",
-    setPrimary: "Set Primary",
-    geminiApiKeyTitle: "🤖 Gemini 2.0 Flash API Key",
-    geminiApiKeyDesc: "Add your Google Gemini API key to enable online deep contextual intelligence. (Leave empty to use offline emergency knowledge).",
-    saveChanges: "SAVE CHANGES",
-    exportBackup: "Export Backup",
-    importBackup: "Import Backup",
+    primaryTag: "PRIMARY",
+    setPrimary: "Make Primary",
+    geminiApiKeyTitle: "🤖 Google Gemini 2.0 Flash API Key",
+    geminiApiKeyDesc: "Enter your Gemini API key for deep conversational intelligence. (Leave empty to use built-in offline emergency knowledge).",
+    saveChanges: "Save Changes",
+    exportBackup: "Export Vault Backup (JSON)",
+    importBackup: "Import Vault Backup (JSON)",
     saveSuccess: "Settings & Medical Profile Saved Successfully!",
     promptContactName: "Contact Name:",
     promptContactPhone: "Contact Phone Number (with country code):",
     promptContactRel: "Relationship (e.g. Spouse, Parent, Friend):",
-    desktopDashboard: "SafetyNet Command Center"
+    desktopDashboard: "SafetyNet Command Center",
+
+    // Security & Cryptography Vault
+    securityVault: "🔐 Zero-Knowledge Security Vault",
+    securityVaultDesc: "Protect your emergency data and API keys with military-grade AES-256-GCM encryption.",
+    vaultLocked: "Vault Locked",
+    vaultUnlocked: "Vault Unlocked",
+    enterPin: "Enter 4-6 Digit Security PIN",
+    setPin: "Set Master Security PIN",
+    removePin: "Disable PIN Protection",
+    duressPinTitle: "🎭 Duress / Silent SOS PIN",
+    duressPinDesc: "Entering this secondary PIN displays a normal decoy screen while silently broadcasting emergency distress beacons in the background.",
+    autoLockTitle: "Auto-Lock on App Background / Minimized",
+    lockVaultNow: "Lock Vault Now",
+    unlockVaultNow: "Unlock Vault",
+    invalidPin: "Incorrect PIN. Access Denied.",
+    camouflageMode: "Stealth Disguise Mode (Calculator)",
+    pinSetSuccess: "Zero-Knowledge Encryption Vault Enabled!"
   },
   hi: {
     // App header & nav
@@ -133,7 +150,7 @@ export const translations = {
     navTimer: "टाइमर",
     navMap: "नक्शा",
     navChat: "एआई चैट",
-    navMedical: "मेडिकल कार्ड",
+    navMedical: "मेडिकल व वॉल्ट",
 
     // SOS Component
     sosTitle: "आपातकालीन एसओएस",
@@ -216,7 +233,7 @@ export const translations = {
 
     // Profile & Medical Component
     tabMedicalCard: "📋 आपातकालीन मेडिकल कार्ड",
-    tabSettings: "⚙️ संपर्क और सेटिंग्स",
+    tabSettings: "⚙️ संपर्क और सुरक्षा वॉल्ट",
     medicalIdTitle: "आपातकालीन मेडिकल आईडी",
     firstResponderAccess: "प्राथमिक चिकित्सा कर्मियों के लिए",
     fullName: "पूरा नाम",
@@ -242,7 +259,24 @@ export const translations = {
     promptContactName: "संपर्क का नाम:",
     promptContactPhone: "फोन नंबर (देश कोड सहित):",
     promptContactRel: "संबंध (जैसे: माता-पिता, जीवनसाथी, मित्र):",
-    desktopDashboard: "सेफ्टीनेट कमांड सेंटर"
+    desktopDashboard: "सेफ्टीनेट कमांड सेंटर",
+
+    // Security & Cryptography Vault
+    securityVault: "🔐 ज़ीरो-नॉलेज सुरक्षा वॉल्ट",
+    securityVaultDesc: "अपने मेडिकल डेटा और सेटिंग्स को AES-256-GCM मिलिट्री-ग्रेड एन्क्रिप्शन से सुरक्षित करें।",
+    vaultLocked: "वॉल्ट लॉक है",
+    vaultUnlocked: "वॉल्ट अनलॉक है",
+    enterPin: "4-6 अंकों का सुरक्षा पिन दर्ज करें",
+    setPin: "मास्टर सुरक्षा पिन सेट करें",
+    removePin: "पिन सुरक्षा हटाएं",
+    duressPinTitle: "🎭 ड्रेस / गुप्त पिन (शांत एसओएस)",
+    duressPinDesc: "यह पिन डालने पर सामान्य स्क्रीन दिखती है परंतु बैकग्राउंड में तुरंत शांत आपातकालीन एसओएस सिग्नल चला जाता है।",
+    autoLockTitle: "ऐप बैकग्राउंड होने पर स्वतः लॉक करें",
+    lockVaultNow: "वॉल्ट लॉक करें",
+    unlockVaultNow: "वॉल्ट अनलॉक करें",
+    invalidPin: "गलत पिन। प्रवेश अस्वीकृत।",
+    camouflageMode: "गुप्त कैलकुलेटर मोड",
+    pinSetSuccess: "सुरक्षा पिन और एन्क्रिप्टेड वॉल्ट सक्रिय हो गया!"
   }
 };
 

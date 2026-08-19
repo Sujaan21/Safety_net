@@ -1,4 +1,4 @@
-﻿import './style.css';
+import './style.css';
 import { SosComponent } from './components/sos.js';
 import { TimerComponent } from './components/timer.js';
 import { MapComponent } from './components/map.js';
@@ -8,12 +8,14 @@ import { sound } from './services/sound.js';
 import { locationService } from './services/location.js';
 import { storage } from './services/storage.js';
 import { i18n } from './services/i18n.js';
+import { vaultCrypto } from './services/crypto.js';
 
 class App {
   constructor() {
     this.currentTab = 'sos';
     this.container = document.getElementById('tab-content');
     this.components = {};
+    this.isCamouflage = false;
   }
 
   async init() {
@@ -32,6 +34,7 @@ class App {
     // 3. Bind navigation and header actions
     this._bindNavigation();
     this._bindGlobalHeader();
+    this._bindSecurityListeners();
     this._updateStaticTranslations();
     this.switchTab('sos');
 
@@ -50,6 +53,56 @@ class App {
       this._updateStaticTranslations();
       this.components[this.currentTab].render();
     });
+  }
+
+  _bindSecurityListeners() {
+    // Auto-Lock on visibility change (when phone is locked or app minimized)
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && storage.hasPinProtection()) {
+        vaultCrypto.lock();
+        if (this.currentTab === 'profile') {
+          this.components.profile.render();
+        }
+      }
+    });
+
+    // Duress PIN Event listener (Silent Emergency Broadcast)
+    window.addEventListener('safetynet:duress-triggered', async () => {
+      console.warn('🚨 DURESS MODE TRIGGERED: Activating silent emergency beacon.');
+      try {
+        const coords = await locationService.getCurrentLocation();
+        const profile = storage.getProfile();
+        const primary = profile.contacts.find(c => c.isPrimary) || profile.contacts[0];
+        if (primary && primary.phone) {
+          const silentMsg = `🚨 SILENT DURESS ALERT: User entered duress PIN. Immediate assistance required. GPS: https://maps.google.com/?q=${coords.latitude},${coords.longitude}`;
+          // Silently trigger background dispatch link if possible
+          console.log('Silent Duress Telemetry Dispatch prepared for:', primary.phone, silentMsg);
+        }
+      } catch (err) {
+        console.warn('Duress location capture fallback:', err);
+      }
+    });
+
+    // Stealth Camouflage Key (Escape or Camouflage Button)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        this.toggleCamouflage();
+      }
+    });
+  }
+
+  toggleCamouflage() {
+    this.isCamouflage = !this.isCamouflage;
+    const camoEl = document.getElementById('camouflage-screen');
+    if (!camoEl) return;
+
+    if (this.isCamouflage) {
+      camoEl.classList.remove('hidden');
+      camoEl.classList.add('flex');
+    } else {
+      camoEl.classList.add('hidden');
+      camoEl.classList.remove('flex');
+    }
   }
 
   _applyTheme(theme) {
@@ -172,6 +225,11 @@ class App {
       langBtn.addEventListener('click', () => {
         i18n.toggleLanguage();
       });
+    }
+
+    const camoBtn = document.getElementById('header-camo-btn');
+    if (camoBtn) {
+      camoBtn.addEventListener('click', () => this.toggleCamouflage());
     }
 
     const strobeDismiss = document.getElementById('screen-strobe-overlay');

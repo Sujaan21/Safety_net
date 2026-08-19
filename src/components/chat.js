@@ -1,6 +1,7 @@
-﻿import { askGemini } from '../services/gemini.js';
+import { askGemini } from '../services/gemini.js';
 import { sound } from '../services/sound.js';
 import { i18n } from '../services/i18n.js';
+import { security } from '../services/security.js';
 
 export class ChatComponent {
   constructor(container) {
@@ -33,20 +34,20 @@ export class ChatComponent {
               </div>
               
               <div class="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible no-scrollbar pb-1 lg:pb-0">
-                <button data-prompt="${i18n.t('promptFollowed')}" class="quick-chip whitespace-nowrap lg:whitespace-normal text-left px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 border transition active:scale-95">
-                  ${i18n.t('chipFollowed')}
+                <button data-prompt="${security.escapeHTML(i18n.t('promptFollowed'))}" class="quick-chip whitespace-nowrap lg:whitespace-normal text-left px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 border transition active:scale-95">
+                  ${security.escapeHTML(i18n.t('chipFollowed'))}
                 </button>
-                <button data-prompt="${i18n.t('promptDeescalate')}" class="quick-chip whitespace-nowrap lg:whitespace-normal text-left px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 border transition active:scale-95">
-                  ${i18n.t('chipDeescalate')}
+                <button data-prompt="${security.escapeHTML(i18n.t('promptDeescalate'))}" class="quick-chip whitespace-nowrap lg:whitespace-normal text-left px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 border transition active:scale-95">
+                  ${security.escapeHTML(i18n.t('chipDeescalate'))}
                 </button>
-                <button data-prompt="${i18n.t('promptBleeding')}" class="quick-chip whitespace-nowrap lg:whitespace-normal text-left px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 border transition active:scale-95">
-                  ${i18n.t('chipBleeding')}
+                <button data-prompt="${security.escapeHTML(i18n.t('promptBleeding'))}" class="quick-chip whitespace-nowrap lg:whitespace-normal text-left px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 border transition active:scale-95">
+                  ${security.escapeHTML(i18n.t('chipBleeding'))}
                 </button>
-                <button data-prompt="${i18n.t('promptCpr')}" class="quick-chip whitespace-nowrap lg:whitespace-normal text-left px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 border transition active:scale-95">
-                  ${i18n.t('chipCpr')}
+                <button data-prompt="${security.escapeHTML(i18n.t('promptCpr'))}" class="quick-chip whitespace-nowrap lg:whitespace-normal text-left px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 border transition active:scale-95">
+                  ${security.escapeHTML(i18n.t('chipCpr'))}
                 </button>
-                <button data-prompt="${i18n.t('promptRideshare')}" class="quick-chip whitespace-nowrap lg:whitespace-normal text-left px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 border transition active:scale-95">
-                  ${i18n.t('chipRideshare')}
+                <button data-prompt="${security.escapeHTML(i18n.t('promptRideshare'))}" class="quick-chip whitespace-nowrap lg:whitespace-normal text-left px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 border transition active:scale-95">
+                  ${security.escapeHTML(i18n.t('chipRideshare'))}
                 </button>
               </div>
             </div>
@@ -142,7 +143,9 @@ export class ChatComponent {
   }
 
   _formatMarkdown(text) {
-    return text
+    if (!text) return '';
+    const safe = security.escapeHTML(text);
+    return safe
       .replace(/^### (.*$)/gim, '<h3 class="text-sm md:text-base font-bold text-cyan-600 dark:text-cyan-300 my-1.5">$1</h3>')
       .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-900 dark:text-white">$1</strong>')
       .replace(/\*(.*?)\*/g, '<em class="text-slate-700 dark:text-slate-300">$1</em>')
@@ -157,7 +160,7 @@ export class ChatComponent {
     if (form && input) {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const text = input.value.trim();
+        const text = security.sanitizeInput(input.value);
         if (!text || this.isTyping) return;
 
         input.value = '';
@@ -210,7 +213,7 @@ export class ChatComponent {
         text: reply.text,
         source: reply.source
       });
-    } catch (e) {
+    } catch {
       this.messages.push({
         id: `m-${Date.now()}`,
         sender: 'model',

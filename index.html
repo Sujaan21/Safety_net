@@ -1,10 +1,15 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>SafetyNet — Personal Safety Sentinel & Command Center</title>
   
+  <!-- Security Headers & Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org; connect-src 'self' https://generativelanguage.googleapis.com https://nominatim.openstreetmap.org https://overpass-api.de; media-src 'self' blob:; worker-src 'self' blob:;" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#070b14" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -30,6 +35,44 @@
 </head>
 <body class="bg-white dark:bg-[#070b14] text-slate-900 dark:text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden antialiased transition-colors duration-200">
 
+  <!-- Stealth Camouflage Overlay (Calculator Disguise) -->
+  <div id="camouflage-screen" class="hidden fixed inset-0 z-50 bg-[#121214] text-white flex-col justify-center items-center p-6 select-none">
+    <div class="w-full max-w-xs bg-[#1c1c1e] rounded-3xl p-5 shadow-2xl border border-white/10 space-y-4">
+      <div class="flex items-center justify-between text-xs text-slate-400 pb-1 border-b border-white/10">
+        <span>Standard Calculator</span>
+        <button id="exit-camo-btn" class="text-[10px] px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-slate-300 font-mono">Exit (ESC)</button>
+      </div>
+      <div id="calc-display" class="bg-black/60 rounded-2xl p-4 text-right text-3xl font-mono tracking-wider overflow-x-auto text-cyan-400">
+        0
+      </div>
+      <div class="grid grid-cols-4 gap-2.5 text-base font-semibold">
+        <button class="calc-key p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c] text-rose-400">C</button>
+        <button class="calc-key p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c] text-slate-300">±</button>
+        <button class="calc-key p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c] text-slate-300">%</button>
+        <button class="calc-key p-3.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white">÷</button>
+
+        <button class="calc-key p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c]">7</button>
+        <button class="calc-key p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c]">8</button>
+        <button class="calc-key p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c]">9</button>
+        <button class="calc-key p-3.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white">×</button>
+
+        <button class="calc-key p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c]">4</button>
+        <button class="calc-key p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c]">5</button>
+        <button class="calc-key p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c]">6</button>
+        <button class="calc-key p-3.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white">−</button>
+
+        <button class="calc-key p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c]">1</button>
+        <button class="calc-key p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c]">2</button>
+        <button class="calc-key p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c]">3</button>
+        <button class="calc-key p-3.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white">+</button>
+
+        <button class="calc-key col-span-2 p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c]">0</button>
+        <button class="calc-key p-3.5 rounded-xl bg-[#2c2c2e] hover:bg-[#3a3a3c]">.</button>
+        <button class="calc-key p-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white">=</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Screen Strobe Emergency Visual Overlay -->
   <div id="screen-strobe-overlay" class="hidden fixed inset-0 z-50 transition-colors pointer-events-auto cursor-pointer flex items-center justify-center">
     <div class="bg-black/90 px-8 py-4 rounded-3xl text-white font-black text-sm uppercase tracking-widest border border-white/20 shadow-2xl">
@@ -52,7 +95,7 @@
             <h1 id="header-app-title" class="text-lg md:text-xl font-black tracking-wide bg-gradient-to-r from-red-600 via-rose-500 to-cyan-500 bg-clip-text text-transparent">
               SafetyNet
             </h1>
-            <span class="hidden md:inline-block px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">PRO</span>
+            <span class="hidden md:inline-block px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">VAULT</span>
           </div>
           <div class="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center space-x-1.5">
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -61,7 +104,7 @@
         </div>
       </div>
 
-      <!-- Desktop Nav Tabs (Centrally aligned) -->
+      <!-- Desktop Nav Tabs -->
       <nav class="hidden md:flex items-center space-x-1.5 p-1.5 bg-slate-100 dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-inner">
         <button data-tab="sos" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 border border-cyan-500/30">
           <span>🚨</span> <span class="nav-label-text">SOS</span>
@@ -80,8 +123,13 @@
         </button>
       </nav>
 
-      <!-- Action Controls: Language, Theme & Siren -->
-      <div class="flex items-center space-x-2.5">
+      <!-- Action Controls: Camouflage, Language, Theme & Siren -->
+      <div class="flex items-center space-x-2">
+        <!-- Stealth Quick Disguise Button -->
+        <button id="header-camo-btn" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold border border-slate-300 dark:border-slate-700/60 transition active:scale-95 shadow-sm" title="Stealth Disguise Mode (Calculator)">
+          <span>🧮</span>
+        </button>
+
         <!-- Dual Language Toggle (EN / HI) -->
         <button id="header-lang-btn" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold border border-slate-300 dark:border-slate-700/60 transition active:scale-95 flex items-center space-x-1.5 shadow-sm" title="Change Language / भाषा बदलें">
           <span id="lang-flag">🇮🇳</span>
@@ -149,5 +197,54 @@
   </nav>
 
   <script type="module" src="/src/main.js"></script>
+  <script>
+    // Calculator Camouflage Engine
+    (function() {
+      let currentVal = '0';
+      const display = document.getElementById('calc-display');
+      const exitBtn = document.getElementById('exit-camo-btn');
+      
+      if (exitBtn) {
+        exitBtn.addEventListener('click', () => {
+          const camo = document.getElementById('camouflage-screen');
+          if (camo) {
+            camo.classList.add('hidden');
+            camo.classList.remove('flex');
+          }
+        });
+      }
+
+      document.querySelectorAll('.calc-key').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const char = btn.innerText.trim();
+          if (char === 'C') {
+            currentVal = '0';
+          } else if (char === '=') {
+            try {
+              const safeExp = currentVal.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+              if (/^[0-9+\-*/. ]+$/.test(safeExp)) {
+                currentVal = String(Function('"use strict";return (' + safeExp + ')')());
+              }
+            } catch {
+              currentVal = 'Error';
+            }
+          } else if (char === '±') {
+            if (currentVal !== '0') {
+              currentVal = currentVal.startsWith('-') ? currentVal.slice(1) : '-' + currentVal;
+            }
+          } else if (char === '%') {
+            currentVal = String(parseFloat(currentVal) / 100);
+          } else {
+            if (currentVal === '0' || currentVal === 'Error') {
+              currentVal = char;
+            } else {
+              currentVal += char;
+            }
+          }
+          if (display) display.innerText = currentVal;
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
